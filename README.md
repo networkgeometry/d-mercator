@@ -108,17 +108,28 @@ The program outputs several files during and after the embedding procedure
 
 Several options are provided to adjust the embedding procedure to specific needs and can be combined
 
-* [Dimension](#dimension)
-* [Custom output filename](#custom-output-filename)
-* [Custom value for beta](#custom-value-for-beta)
-* [Custom value for the seed of the random number generator](#custom-value-for-the-seed-of-the-random-number-generator)
-* [Clean output mode](#clean-output-mode)
-* [Fast mode](#fast-mode)
-* [Post-processing of the inferred values of the radial positions](#post-processing-of-the-inferred-values-of-the-radial-positions)
-* [Quiet mode](#quiet-mode)
-* [Refine mode](#refine-mode)
-* [Screen mode](#screen-mode)
-* [Validation mode](#validation-mode)
+- [Table of content](#table-of-content)
+- [Installation](#installation)
+  - [Command line executable](#command-line-executable)
+  - [Python module](#python-module)
+  - [Docker](#docker)
+- [Usage](#usage)
+  - [Format of input files](#format-of-input-files)
+  - [Running the code](#running-the-code)
+  - [Output files](#output-files)
+  - [Options](#options)
+    - [Dimension](#dimension)
+    - [Custom output filename](#custom-output-filename)
+    - [Custom value for beta](#custom-value-for-beta)
+    - [Custom value for the seed of the random number generator](#custom-value-for-the-seed-of-the-random-number-generator)
+    - [Clean output mode](#clean-output-mode)
+    - [Fast mode](#fast-mode)
+    - [Post-processing of the inferred values of the radial positions](#post-processing-of-the-inferred-values-of-the-radial-positions)
+    - [Quiet mode](#quiet-mode)
+    - [Refine mode](#refine-mode)
+    - [Screen mode](#screen-mode)
+    - [Validation mode](#validation-mode)
+- [Publications](#publications)
 
 #### Dimension
 In order to set the dimension of the embedding a parameter `d` need to be set
@@ -272,9 +283,16 @@ mercator.embed(<edgelist_filename>, validation_mode=True)
 
 ## Publications
 
-Please cite:
+- _The D-Mercator method for the multidimensional hyperbolic embedding of real networks_<br>
+  [Robert Jankowski](https://robertjankowski.github.io/),
+  [Antoine Allard](http://antoineallard.info),
+  [Marián Boguñá](http://complex.ffn.ub.es/~mbogunya/) and 
+  [M. Ángeles Serrano](http://morfeo.ffn.ub.es/~mariangeles/ws_en/) <br>
+  Nature Commmunications 14, 7585 (2023) <br>
+  [Full text](https://www.nature.com/articles/s41467-023-43337-5) | [arXiv](https://arxiv.org/abs/2304.06580)
 
-_Mercator: uncovering faithful hyperbolic embeddings of complex networks_<br>
+
+- _Mercator: uncovering faithful hyperbolic embeddings of complex networks_<br>
 [Guillermo García-Pérez*](https://scholar.google.es/citations?user=MibFSJIAAAAJ&hl=en),
 [Antoine Allard*](http://antoineallard.info),
 [M. Ángeles Serrano](http://morfeo.ffn.ub.es/~mariangeles/ws_en/) and
