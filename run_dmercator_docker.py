@@ -9,22 +9,20 @@ def parse_args():
     
     Wrapper to run dmercator inside Docker container
 
-    0. (optional) build container or fetch already built image from the web
-    1. Run embeddings with attached volume (local folder with the edgelist)
-
+    1. Create a folder and place a network you want to embed. For instance: `data/mydata.edge`
+    2. Run embeddings with attached volume (local folder with the edgelist)
+    3. The embeddings will be placed in `data/` folder
     
     NOTE: by default docker will run in background `-d` flag
       You can view current jobs by typing: `docker container ls`
       To kill the job run: `docker container kill <container_id>` 
 
-
     For more detailed information about parameters see README.md 
       or include/embeddingsSD_unix.hpp help string
 
-
     Example:
     > python run_dmercator_docker.py \
-        -i path/to/edgelist.edge \
+        -i data/mydata.edge \
         -d 2 \
         -v 1 \ # 1 - turn on that option
         -c 1
@@ -47,7 +45,6 @@ def parse_args():
                         required=False, help="Validates and characterizes the inferred random network ensamble")
     args = parser.parse_args()
     return args
-
 
 
 if __name__ == '__main__':
