@@ -45,9 +45,6 @@ def parse_args():
                         required=False, help="No kappas postprocessing after ML.")
     parser.add_argument('-v', '--validation_mode', type=str, default='',
                         required=False, help="Validates and characterizes the inferred random network ensamble")
-
-    parser.add_argument('-x', '--build_docker', type=str, default='',
-                        required=False, help="Whether to build docker image")
     args = parser.parse_args()
     return args
 
@@ -78,16 +75,8 @@ if __name__ == '__main__':
     if args.validation_mode:
             args.validation_mode = '-v'
 
-    
-    if args.build_docker:
-        build_command = 'docker build -t dmercator-custom .'
-        os.system(build_command)
-
-    # TODO: publish docker image
-    image_name = 'dmercator-ub' if not args.build_docker else 'dmercator-custom'
-    
     run_command = f"""
-      docker run -d --rm -v {folder}:/data {image_name} \
+      docker run -d --rm -v {os.path.abspath(folder)}:/data rjankowskiub/dmercator \
         -d {args.dimension} \
         {args.screen_mode} \
         {args.beta} \
