@@ -43,6 +43,8 @@ def parse_args():
                         required=False, help="No kappas postprocessing after ML.")
     parser.add_argument('-v', '--validation_mode', type=str, default='',
                         required=False, help="Validates and characterizes the inferred random network ensamble")
+    parser.add_argument('-s', '--seed', type=float, default=None,
+                        required=False, help="Random seed")
     args = parser.parse_args()
     return args
 
@@ -70,7 +72,12 @@ if __name__ == '__main__':
         args.no_kappa_postprocessing = '-k'
         
     if args.validation_mode:
-            args.validation_mode = '-v'
+        args.validation_mode = '-v'
+
+    if args.seed is not None:
+        seed = f'-s {args.seed}'
+    else:
+        seed = ''
 
     run_command = f"""
       docker run -d --rm -v {os.path.abspath(folder)}:/data rjankowskiub/dmercator \
@@ -81,6 +88,7 @@ if __name__ == '__main__':
         {args.fast_mode} \
         {args.no_kappa_postprocessing} \
         {args.validation_mode} \
+        {seed} \
         /data/{filename}
     """
     os.system(run_command)
