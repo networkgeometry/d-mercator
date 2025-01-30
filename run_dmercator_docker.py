@@ -76,11 +76,13 @@ if __name__ == '__main__':
 
     if args.seed is not None:
         seed = f'-s {args.seed}'
+        env_var = "-e OMP_NUM_THREADS=1"
     else:
         seed = ''
+        env_var = ''
 
     run_command = f"""
-      docker run -d --rm -v {os.path.abspath(folder)}:/data rjankowskiub/dmercator \
+      docker run -d --rm {env_var} -v {os.path.abspath(folder)}:/data rjankowskiub/dmercator \
         -d {args.dimension} \
         {args.screen_mode} \
         {args.beta} \
