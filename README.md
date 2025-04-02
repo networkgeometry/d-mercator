@@ -54,7 +54,7 @@ python3 setup.py install # you might need to run it with `sudo`
 
 ### Docker
 
-The docker image is located on Docker Hub: https://hub.docker.com/repository/docker/rjankowskiub/dmercator/general. 
+The docker image is located on Docker Hub: https://hub.docker.com/r/rjankowskiub/dmercator. 
 
 To run D-Mercator with Docker use `run_dmercator_docker.py` script. Given an edgelist you want to embed, create a folder and move it there. Later, run
 
