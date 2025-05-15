@@ -2435,6 +2435,7 @@ void embeddingSD_t::infer_parameters(int dim)
         if(beta < BETA_ABS_MIN_DIM)
         {
           beta = BETA_ABS_MIN_DIM;
+          infer_kappas_given_beta_for_degree_class(dim);
           if(!QUIET_MODE)
             std::clog << "WARNING: value too close to D, using beta = " << std::fixed << std::setw(11) << beta << ".\n";
           break;

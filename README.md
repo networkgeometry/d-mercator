@@ -16,6 +16,8 @@ Inference of high-quality embeddings of complex networks into the multidimension
 3. [Publications](#publications)
 
 
+## Try it online on Google Colab: [link](https://colab.research.google.com/drive/1EWsFXzHkhUnAL_ITLqaNaBM-n-w1wT3M)
+
 ## Installation
 
 Two interfaces of the program are available: a command line executable and a Python module.
