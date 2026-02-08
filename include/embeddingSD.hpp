@@ -286,7 +286,7 @@ class embeddingSD_t
     // === Embedding ===
     // Computes the log-likelihood between two vertices.
     double compute_pairwise_loglikelihood(int v1, double t1, int v2, double t2, bool neighbors);
-    double compute_pairwise_loglikelihood(int dim, int v1, std::vector<double> pos1, int v2, std::vector<double> pos2, bool neighbors, double radius);
+    double compute_pairwise_loglikelihood(int dim, int v1, const std::vector<double> &pos1, int v2, const std::vector<double> &pos2, bool neighbors, double radius);
     // Finds the initial ordering of vertices based on the Eigen Map method.
     void find_initial_ordering(std::vector<int> &ordering, std::vector<double> &raw_theta);
     void find_initial_ordering(std::vector<std::vector<double>> &positions, int dim);
@@ -970,7 +970,7 @@ double embeddingSD_t::compute_random_ensemble_clustering_for_degree_class(int d1
 
 // =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
 // =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
-double embeddingSD_t::compute_pairwise_loglikelihood(int dim, int v1, std::vector<double> pos1, int v2, std::vector<double> pos2, bool neighbors, double radius)
+double embeddingSD_t::compute_pairwise_loglikelihood(int dim, int v1, const std::vector<double> &pos1, int v2, const std::vector<double> &pos2, bool neighbors, double radius)
 {
   // Avoids to compute the pairwise loglikelihood of the vertex with itself.
   if(v1 == v2)
@@ -3105,73 +3105,82 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
 {
   // Variables.
   int has_moved = 0;
-  double tmp_angle;
-  double tmp_loglikelihood;
   auto best_position = d_positions[v1];
-  // Iterators.
-  std::set<int>::iterator it2, end;
-  // Computes the current loglikelihood.
-  double previous_loglikelihood = 0;
+  std::vector<int> neighbors(adjacency_list[v1].begin(), adjacency_list[v1].end());
+
+  // Caches pairwise constants independent of the proposed position.
+  const double inv_dim = 1.0 / static_cast<double>(dim);
+  std::vector<double> pair_prefactor(nb_vertices, 0);
   for(int v2(0); v2<nb_vertices; ++v2)
   {
-    previous_loglikelihood += compute_pairwise_loglikelihood(dim, v1, best_position, v2, d_positions[v2], false, radius);
+    if(v2 == v1)
+    {
+      continue;
+    }
+    pair_prefactor[v2] = radius / std::pow(mu * kappa[v1] * kappa[v2], inv_dim);
   }
-  it2 = adjacency_list[v1].begin();
-  end = adjacency_list[v1].end();
-  for(; it2!=end; ++it2)
+
+  auto compute_local_loglikelihood = [&](const std::vector<double> &position) -> double
   {
-    previous_loglikelihood += compute_pairwise_loglikelihood(dim, v1, best_position, *it2, d_positions[*it2], true, radius);
-  }
-  double best_loglikelihood = previous_loglikelihood;
+    double local_loglikelihood = 0;
+    for(int v2(0); v2<nb_vertices; ++v2)
+    {
+      if(v2 == v1)
+      {
+        continue;
+      }
+      const double dtheta = compute_angle_d_vectors(position, d_positions[v2]);
+      const double chi = pair_prefactor[v2] * dtheta;
+      const double prob = 1 / (1 + std::pow(chi, beta));
+      local_loglikelihood += std::log(1 - prob);
+    }
+    for(const int v2 : neighbors)
+    {
+      const double dtheta = compute_angle_d_vectors(position, d_positions[v2]);
+      const double chi = pair_prefactor[v2] * dtheta;
+      const double prob = 1 / (1 + std::pow(chi, beta));
+      local_loglikelihood += std::log(prob);
+    }
+    return local_loglikelihood;
+  };
+
+  // Computes the current loglikelihood.
+  double best_loglikelihood = compute_local_loglikelihood(best_position);
 
   // Compute the weighted average positions of the neighbors
   std::vector<double> mean_vector(dim + 1, 0);
-  it2 = adjacency_list[v1].begin();
-  end = adjacency_list[v1].end();
-  for(; it2!=end; ++it2)
+  for(const int v2 : neighbors)
   {
-    // Identifies the neighbor.
-    const auto pos2 = d_positions[*it2];
-    const auto k2 = kappa[*it2];
-
+    const auto &pos2 = d_positions[v2];
+    const double inv_k2_squared = 1.0 / (kappa[v2] * kappa[v2]);
     for (int i=0; i<dim+1; ++i)
-      mean_vector[i] += pos2[i] / (k2 * k2);
+      mean_vector[i] += pos2[i] * inv_k2_squared;
   }
   normalize_and_rescale_vector(mean_vector, radius);
 
   // Finds the largest angular distance between the neighbor and the average position.
   double max_angle = MIN_TWO_SIGMAS_NORMAL_DIST;
-  it2 = adjacency_list[v1].begin();
-  for(; it2!=end; ++it2)
+  for(const int v2 : neighbors)
   {
-    double dtheta = compute_angle_d_vectors(mean_vector, d_positions[*it2]);
+    const double dtheta = compute_angle_d_vectors(mean_vector, d_positions[v2]);
     if(dtheta > max_angle)
       max_angle = dtheta;
   }
   max_angle /= 2;
 
   // Considers various wisely chosen new angular positions and keeps the best.
-  int _nb_new_angles_to_try = MIN_NB_ANGLES_TO_TRY * std::max(1.0, std::log(nb_vertices));
+  int _nb_new_angles_to_try = MIN_NB_ANGLES_TO_TRY * std::max(1.0, std::log(static_cast<double>(nb_vertices)));
+  std::vector<double> proposed_position(dim + 1, 0);
+  const double inv_radius = 1.0 / radius;
   for(int e(0); e<_nb_new_angles_to_try; ++e)
   {
     // Get the position in the standard range.
-    std::vector<double> proposed_position(dim + 1, 0);
     for (int i=0; i<dim+1; ++i)
-      proposed_position[i] = max_angle * normal_01(engine) + mean_vector[i] / radius; // multivariate normal distribution
+      proposed_position[i] = max_angle * normal_01(engine) + mean_vector[i] * inv_radius; // multivariate normal distribution
     normalize_and_rescale_vector(proposed_position, radius);
 
     // Computes the local loglikelihood.
-    tmp_loglikelihood = 0;
-    for(int v2(0); v2<nb_vertices; ++v2)
-    {
-      tmp_loglikelihood += compute_pairwise_loglikelihood(dim, v1, proposed_position, v2, d_positions[v2], false, radius);
-    }
-    it2 = adjacency_list[v1].begin();
-    end = adjacency_list[v1].end();
-    for(; it2!=end; ++it2)
-    {
-      tmp_loglikelihood += compute_pairwise_loglikelihood(dim, v1, proposed_position, *it2, d_positions[*it2], true, radius);
-    }
+    const double tmp_loglikelihood = compute_local_loglikelihood(proposed_position);
     // Preserves the optimal angular sector.
     if(tmp_loglikelihood > best_loglikelihood)
     {
