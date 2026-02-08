@@ -3003,40 +3003,54 @@ int embeddingSD_t::refine_angle(int v1)
 {
   // Variables.
   int has_moved = 0;
-  double tmp_angle;
-  double tmp_loglikelihood;
   double best_angle = theta[v1];
-  // Iterators.
-  std::set<int>::iterator it2, end;
-  // Computes the current loglikelihood.
-  double previous_loglikelihood = 0;
+  std::vector<int> neighbors(adjacency_list[v1].begin(), adjacency_list[v1].end());
+
+  // Caches pairwise constants independent of the candidate angle.
+  const double prefactor = nb_vertices / (2 * PI * mu);
+  const double prefactor_over_kappa_v1 = prefactor / kappa[v1];
+  std::vector<double> pair_prefactor(nb_vertices);
   for(int v2(0); v2<nb_vertices; ++v2)
   {
-    previous_loglikelihood += compute_pairwise_loglikelihood(v1, best_angle, v2, theta[v2], false);
+    pair_prefactor[v2] = prefactor_over_kappa_v1 / kappa[v2];
   }
-  it2 = adjacency_list[v1].begin();
-  end = adjacency_list[v1].end();
-  for(; it2!=end; ++it2)
+
+  auto compute_local_loglikelihood = [&](double angle) -> double
   {
-    previous_loglikelihood += compute_pairwise_loglikelihood(v1, best_angle, *it2, theta[*it2], true);
-  }
-  double best_loglikelihood = previous_loglikelihood;
+    double local_loglikelihood = 0;
+    for(int v2(0); v2<nb_vertices; ++v2)
+    {
+      if(v2 == v1)
+      {
+        continue;
+      }
+      const double da = PI - std::fabs(PI - std::fabs(angle - theta[v2]));
+      const double fraction = pair_prefactor[v2] * da;
+      local_loglikelihood += -std::log(1 + std::pow(fraction, -beta));
+    }
+    for(const int v2 : neighbors)
+    {
+      const double da = PI - std::fabs(PI - std::fabs(angle - theta[v2]));
+      const double fraction = pair_prefactor[v2] * da;
+      local_loglikelihood += -beta * std::log(fraction);
+    }
+    return local_loglikelihood;
+  };
+
+  // Computes the current loglikelihood.
+  double best_loglikelihood = compute_local_loglikelihood(best_angle);
 
   // Computes the weighted average angular positions of the neighbors.
-  it2 = adjacency_list[v1].begin();
-  end = adjacency_list[v1].end();
-  double t2, k2, da;
+  double da;
   double sum_sin_theta = 0;
   double sum_cos_theta = 0;
-  for(; it2!=end; ++it2)
+  for(const int v2 : neighbors)
   {
-    // Identifies the neighbor.
-    t2 = theta[*it2];
-    k2 = kappa[*it2];
-
+    const double t2 = theta[v2];
+    const double inv_k2_squared = 1.0 / (kappa[v2] * kappa[v2]);
     // Computes the average angle of neighbors.
-    sum_sin_theta += std::sin(t2) / (k2 * k2);
-    sum_cos_theta += std::cos(t2) / (k2 * k2);
+    sum_sin_theta += std::sin(t2) * inv_k2_squared;
+    sum_cos_theta += std::cos(t2) * inv_k2_squared;
   }
   double average_theta = std::atan2(sum_sin_theta, sum_cos_theta) + PI;
   while(average_theta > (2 * PI))
@@ -3046,10 +3060,9 @@ int embeddingSD_t::refine_angle(int v1)
 
   // Finds the largest angular distance between the neighbor and the average position.
   double max_angle = MIN_TWO_SIGMAS_NORMAL_DIST;
-  it2 = adjacency_list[v1].begin();
-  for(; it2!=end; ++it2)
+  for(const int v2 : neighbors)
   {
-    da = PI - std::fabs(PI - std::fabs(average_theta - theta[*it2]));
+    da = PI - std::fabs(PI - std::fabs(average_theta - theta[v2]));
     if(da > max_angle)
     {
       max_angle = da;
@@ -3058,28 +3071,18 @@ int embeddingSD_t::refine_angle(int v1)
   max_angle /= 2;
 
   // Considers various wisely chosen new angular positions and keeps the best.
-  int _nb_new_angles_to_try = MIN_NB_ANGLES_TO_TRY * std::max(1.0, std::log(nb_vertices));
+  int _nb_new_angles_to_try = MIN_NB_ANGLES_TO_TRY * std::max(1.0, std::log(static_cast<double>(nb_vertices)));
   for(int e(0); e<_nb_new_angles_to_try; ++e)
   {
     // Gets the angle in the standard range.
-    tmp_angle = (normal_01(engine) * max_angle) + average_theta;
+    double tmp_angle = (normal_01(engine) * max_angle) + average_theta;
     while(tmp_angle > (2 * PI))
       tmp_angle = tmp_angle - (2 * PI);
     while(tmp_angle < 0)
       tmp_angle = tmp_angle + (2 * PI);
 
     // Computes the local loglikelihood.
-    tmp_loglikelihood = 0;
-    for(int v2(0); v2<nb_vertices; ++v2)
-    {
-      tmp_loglikelihood += compute_pairwise_loglikelihood(v1, tmp_angle, v2, theta[v2], false);
-    }
-    it2 = adjacency_list[v1].begin();
-    end = adjacency_list[v1].end();
-    for(; it2!=end; ++it2)
-    {
-      tmp_loglikelihood += compute_pairwise_loglikelihood(v1, tmp_angle, *it2, theta[*it2], true);
-    }
+    const double tmp_loglikelihood = compute_local_loglikelihood(tmp_angle);
     // Preserves the optimal angular sector.
     if(tmp_loglikelihood > best_loglikelihood)
     {

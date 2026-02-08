@@ -21,3 +21,4 @@
 - Prioritize exact invariant hoisting and redundant work removal over algorithmic rewrites.
 - Keep data structures unchanged in this pass (`std::set` adjacency), unless a change is clearly low-risk and local.
 - Created `PERF_STATIC_REPORT.md` with ranked hotspots and a conservative, impact/risk-scored optimization plan before code edits.
+- Refactored `refine_angle(int)` to cache per-`v1` pair prefactors and reuse a local likelihood lambda, preserving the same two-term likelihood decomposition (all-pairs non-neighbor term + neighbor correction).
