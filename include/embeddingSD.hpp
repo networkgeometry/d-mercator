@@ -750,10 +750,13 @@ void embeddingSD_t::compute_inferred_ensemble_expected_degrees(int dim, double r
   // Computes the new expected degrees given the inferred values of theta.
   inferred_ensemble_expected_degree.clear();
   inferred_ensemble_expected_degree.resize(nb_vertices, 0);
+  const double inv_dim = 1.0 / static_cast<double>(dim);
   for(int v1=0; v1<nb_vertices; ++v1) {
+    const auto &pos1 = d_positions[v1];
+    const double kappa1 = kappa[v1];
     for(int v2(v1 + 1); v2<nb_vertices; ++v2) {
-      const auto dtheta = compute_angle_d_vectors(d_positions[v1], d_positions[v2]);
-      const auto chi = radius * dtheta / std::pow(mu * kappa[v1] * kappa[v2], 1.0 / dim);
+      const auto dtheta = compute_angle_d_vectors(pos1, d_positions[v2]);
+      const auto chi = radius * dtheta / std::pow(mu * kappa1 * kappa[v2], inv_dim);
       const auto prob = 1 / (1 + std::pow(chi, beta));
       inferred_ensemble_expected_degree[v1] += prob;
       inferred_ensemble_expected_degree[v2] += prob;  
@@ -1834,14 +1837,16 @@ void embeddingSD_t::generate_simulated_adjacency_list(int dim, bool random_posit
   // Initializes the container.
   simulated_adjacency_list.clear();
   simulated_adjacency_list.resize(nb_vertices);
+  const double inv_dim = 1.0 / static_cast<double>(dim);
   // Generates the adjacency list.
   // TODO: for large networks it could be parallelized by splitting vertices into groups
   //  and computing probability inside each of them.
   for (int v1=0; v1 < nb_vertices; ++v1) {
-    const auto positions1 = d_positions[v1];
+    const auto &positions1 = d_positions[v1];
+    const double kappa1 = kappa[v1];
     for (int v2 = v1 + 1; v2 < nb_vertices; ++v2) {
       const auto dtheta = compute_angle_d_vectors(positions1, d_positions[v2]);
-      const auto chi = radius * dtheta / std::pow(mu * kappa[v1] * kappa[v2], 1.0 / dim);
+      const auto chi = radius * dtheta / std::pow(mu * kappa1 * kappa[v2], inv_dim);
       const auto prob = 1 / (1 + std::pow(chi, beta));
       if (uniform_01(engine) < prob) {
         simulated_adjacency_list[v1].insert(v2);
