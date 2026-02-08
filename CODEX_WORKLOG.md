@@ -16,6 +16,7 @@
 - D-dimensional helper functions currently pass vectors by value; changing signatures must remain source-compatible.
 - Build flag changes must stay portable and default-safe.
 - D-dimensional cached pair prefactors now store `radius / pow(mu*kappa[v1]*kappa[v2], 1/d)` once per vertex-update; this is mathematically identical but can still introduce tiny round-off differences relative to recomputing each use.
+- Optional `-O3` remains opt-in because prior comment in build files indicates behavior sensitivity at `-O3`.
 
 ## Decisions & rationale
 - Focus first on `embed` call-chain hotspots: `refine_positions`/`refine_angle`, `compute_inferred_ensemble_expected_degrees`, and `generate_simulated_adjacency_list`.
@@ -26,3 +27,4 @@
 - Refactored `refine_angle(int dim, int v1, double radius)` to cache pair prefactors and reuse one proposal buffer, and changed D pairwise helper args to `const&` to eliminate vector copies.
 - Hoisted D-dimensional degree-1 reinsertion rotation setup in `find_initial_ordering(..., int dim)` so rotation matrix construction is once per anchor vertex instead of once per attached degree-1 node.
 - Hoisted loop invariants in D all-pairs kernels (`compute_inferred_ensemble_expected_degrees` and `generate_simulated_adjacency_list`) and removed per-iteration position copies via `const&`.
+- Added guarded CMake options for Release tuning (`DMERCATOR_RELEASE_O3`, `DMERCATOR_ENABLE_NATIVE`, `DMERCATOR_ENABLE_LTO`) with defaults unchanged and portable.
