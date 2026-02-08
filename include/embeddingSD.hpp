@@ -1530,6 +1530,8 @@ void embeddingSD_t::find_initial_ordering(std::vector<std::vector<double>> &posi
 
   // Add the vertices with degree 1
   std::vector<int> list_neigh_degree_one;
+  std::vector<double> axis(dim + 1, 0);
+  axis[0] = 1;
   auto it2 = ordering_set.begin();
   auto end2 = ordering_set.end();
   for (int v1; it2!=end2; ++it2) {
@@ -1545,26 +1547,26 @@ void embeddingSD_t::find_initial_ordering(std::vector<std::vector<double>> &posi
       if(degree[v2] == 1)
         list_neigh_degree_one.push_back(v2);
     }
-    const auto kappa2 = kappa[v1];  
-    for (int v=0; v<list_neigh_degree_one.size(); ++v) {
-      // Draw value from the distribution of angular distance \Delta\theta 
-      // between two connected nodes with hidden degrees kappa1 and kappa2
+    if(list_neigh_degree_one.empty())
+    {
+      continue;
+    }
+
+    const auto kappa2 = kappa[v1];
+    auto vec1 = positions[v1];
+    normalize_and_rescale_vector(vec1, 1); // unit vector needed in computation of rotation matrix
+    auto rotation_matrix = compute_rotation_matrix(axis, vec1);
+    for (size_t v = 0; v < list_neigh_degree_one.size(); ++v) {
+      // Draw value from the distribution of angular distance \Delta\theta
+      // between two connected nodes with hidden degrees kappa1 and kappa2.
       const auto kappa1 = kappa[list_neigh_degree_one[v]];
       const auto p12 = compute_integral_expected_degree_dimensions(dim, radius, mu, beta, kappa1, kappa2);
       const auto random_angle = draw_random_angular_distance(degree[v1], 1, radius, p12, dim);
-      // Generate random vector with a given angular seperation
-
-      // Create rotation matrix -  positions[v1] -> (1, 0, 0, ...)
-      std::vector<double> axis(dim+1, 0); axis[0] = 1;
-      auto vec1 = positions[v1];
-      normalize_and_rescale_vector(vec1, 1); // unit vector needed in computation of rotation matrix
-      auto M = compute_rotation_matrix(axis, vec1);
-      
       auto new_position = generate_random_d_vector_with_first_coordinate(dim, random_angle, radius);
       // Go back to the initial rotation, in this way the random_angle is the same.
-      auto new_rotated_positions = rotate_vector(M, new_position);
+      auto new_rotated_positions = rotate_vector(rotation_matrix, new_position);
 
-      // Add position of node with degree 1 to list at the correct place
+      // Add position of node with degree 1 to list at the correct place.
       positions[list_neigh_degree_one[v]] = new_rotated_positions;
     }
   }

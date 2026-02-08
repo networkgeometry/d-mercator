@@ -24,3 +24,4 @@
 - Created `PERF_STATIC_REPORT.md` with ranked hotspots and a conservative, impact/risk-scored optimization plan before code edits.
 - Refactored `refine_angle(int)` to cache per-`v1` pair prefactors and reuse a local likelihood lambda, preserving the same two-term likelihood decomposition (all-pairs non-neighbor term + neighbor correction).
 - Refactored `refine_angle(int dim, int v1, double radius)` to cache pair prefactors and reuse one proposal buffer, and changed D pairwise helper args to `const&` to eliminate vector copies.
+- Hoisted D-dimensional degree-1 reinsertion rotation setup in `find_initial_ordering(..., int dim)` so rotation matrix construction is once per anchor vertex instead of once per attached degree-1 node.
