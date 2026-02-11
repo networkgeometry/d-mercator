@@ -99,9 +99,11 @@ class generatingSD_t
     // Loads the values of the hidden variables (i.e., kappa and theta).
     void load_hidden_variables();
     void load_hidden_variables_dim();
+    void load_hidden_variables_for_dimension();
     // Generates an edgelist and writes it into a file.
     void generate_edgelist(int width = 15);
     void generate_edgelist_dim(int width = 15); 
+    void generate_edgelist_for_dimension(int width = 15);
   // Private functions linked to the generation of a random edgelist.
   private:
     // Saves the values of the hidden variables (i.e., kappa and theta).
@@ -238,6 +240,18 @@ void generatingSD_t::generate_edgelist(int width)
   if(OUTPUT_VERTICES_PROPERTIES)
   {
     save_vertices_properties(rdegree, edegree, width);
+  }
+}
+
+void generatingSD_t::generate_edgelist_for_dimension(int width)
+{
+  if(DIMENSION == 1)
+  {
+    generate_edgelist(width);
+  }
+  else
+  {
+    generate_edgelist_dim(width);
   }
 }
 
@@ -443,6 +457,18 @@ void generatingSD_t::load_hidden_variables()
   }
   // Closes the stream.
   hidden_variables_file.close();
+}
+
+void generatingSD_t::load_hidden_variables_for_dimension()
+{
+  if(DIMENSION == 1)
+  {
+    load_hidden_variables();
+  }
+  else
+  {
+    load_hidden_variables_dim();
+  }
 }
 
 

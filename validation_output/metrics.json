@@ -1,0 +1,51 @@
+{
+  "config": {
+    "dimension": 1,
+    "nodes": 500,
+    "seed": 12345,
+    "gamma": 2.7,
+    "target_avg_degree": 10.0,
+    "beta": 2.0,
+    "pair_samples": 5000
+  },
+  "node_count": 499,
+  "paths": {
+    "edge_file": "/Users/robert/repo/d-mercator/validation_output/synthetic_sd.edge",
+    "truth_csv": "/Users/robert/repo/d-mercator/validation_output/coords_truth.csv",
+    "original_csv": "/Users/robert/repo/d-mercator/validation_output/coords_original.csv",
+    "refactored_csv": "/Users/robert/repo/d-mercator/validation_output/coords_refactored.csv",
+    "plots_dir": "/Users/robert/repo/d-mercator/validation_output/plots"
+  },
+  "metrics": {
+    "truth_vs_original": {
+      "mean_error": 0.07998909467213398,
+      "median_error": 0.0660579677739963,
+      "rmse": 0.10096239422562367,
+      "pearson_pairwise": 0.9885142253059341,
+      "spearman_pairwise": 0.9885024361141473,
+      "alignment_reflection": 1.0,
+      "alignment_shift": 3.6754179677739964,
+      "alignment_mse": 0.010193405047770249
+    },
+    "truth_vs_refactored": {
+      "mean_error": 0.07998909467213397,
+      "median_error": 0.0660579677739963,
+      "rmse": 0.10096239422562367,
+      "pearson_pairwise": 0.9878992202661,
+      "spearman_pairwise": 0.9876371069098344,
+      "alignment_reflection": 1.0,
+      "alignment_shift": 3.6754179677739964,
+      "alignment_mse": 0.010193405047770249
+    },
+    "original_vs_refactored": {
+      "mean_error": 5.256316424202269e-18,
+      "median_error": 0.0,
+      "rmse": 2.3003223411635842e-17,
+      "pearson_pairwise": 0.9999999999999999,
+      "spearman_pairwise": 1.0,
+      "alignment_reflection": 0.0,
+      "alignment_shift": 0.0,
+      "alignment_mse": 5.291482873256313e-34
+    }
+  }
+}

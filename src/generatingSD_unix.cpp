@@ -37,17 +37,10 @@ int main(int argc , char *argv[])
   // Parses the options and continues if everything is in order.
   if(parse_options(argc, argv, the_graph))
   {
-    if (the_graph.DIMENSION == 1) {
-      // Loads the hidden variables.
-      the_graph.load_hidden_variables();
-      // Generates an edgelist.
-      the_graph.generate_edgelist();
-    } else {
-      // Loads the kappas
-      the_graph.load_hidden_variables_dim();
-      // Generates an edgelist.
-      the_graph.generate_edgelist_dim();
-    }
+    // Loads the hidden variables and generates an edgelist in a unified
+    // dimension-aware path.
+    the_graph.load_hidden_variables_for_dimension();
+    the_graph.generate_edgelist_for_dimension();
   }
 
   // Returns successfully.

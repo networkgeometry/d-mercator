@@ -33,3 +33,6 @@ cmake-build-release
 !test/*
 !lib/*
 lib/__pycache__
+__pycache__/
+bench/
+bench_smoke/

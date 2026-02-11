@@ -1,14 +1,44 @@
+/*
+ *
+ * Provides the functions related to UNIX operating system.
+ *
+ * Author:  Antoine Allard
+ * WWW:     antoineallard.info
+ * Date:    September 2017
+ *
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ */
 
 #ifndef EMBEDDINGS1_UNIX_HPP_INCLUDED
 #define EMBEDDINGS1_UNIX_HPP_INCLUDED
 
+// Standard Template Library
 #include <cstdlib>
-#include <getopt.h>
 #include <iostream>
 #include <string>
+// Operating System
 #include <unistd.h>
-#include "embeddingSD.hpp"
+// embeddingSD
+#include "embeddingSD_legacy.hpp"
 
+
+// =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
+// Prints the information on the way the command line UNIX program should be used.
+// =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
 void print_usage()
 {
   constexpr auto usage = R"(
@@ -30,6 +60,10 @@ INPUT
   std::cout << usage << '\n';
 }
 
+
+// =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
+// Prints the information about the options of the command line UNIX program should be used.
+// =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
 void print_help()
 {
   constexpr auto help = R"(
@@ -62,15 +96,17 @@ The following options are available:
     -d [DIMENSION] Dimension of the embeddings.
     -e             Only infer kappas for a given input network. Then exit and save these 
                    hidden degrees to file.
-    -M [MODE]      Performance mode: baseline or optimized. Default: optimized.
-    --timing_json  Print machine-readable stage timings (JSON) to stdout.
   )";
   std::cout << help << '\n';
 }
 
+
+// =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
+// Parses the options (for UNIX-like command line use) and returns the filename of the edgelist.
+// =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
 void parse_options(int argc , char *argv[], embeddingSD_t &the_graph)
 {
-
+  // Shows the options if no argument is given.
   if(argc == 1)
   {
     print_usage();
@@ -78,16 +114,12 @@ void parse_options(int argc , char *argv[], embeddingSD_t &the_graph)
     std::exit(0);
   }
 
+  // <edgelist_filename>
   the_graph.EDGELIST_FILENAME = argv[argc - 1];
 
-  const option long_options[] = {
-    {"mode", required_argument, nullptr, 'M'},
-    {"timing_json", no_argument, nullptr, 'T'},
-    {nullptr, 0, nullptr, 0}
-  };
-
+  // Parsing options.
   int opt;
-  while ((opt = getopt_long(argc, argv, "ab:cfko:r:qs:vd:eM:T", long_options, nullptr)) != -1)
+  while ((opt = getopt(argc,argv,"ab:cfko:r:qs:vd:e")) != -1)
   {
     switch(opt)
     {
@@ -107,6 +139,11 @@ void parse_options(int argc , char *argv[], embeddingSD_t &the_graph)
       case 'f':
         the_graph.MAXIMIZATION_MODE = false;
         break;
+
+      // case 'h':
+      //   print_usage();
+      //   print_help();
+      //   std::exit(0);
 
       case 'k':
         the_graph.KAPPA_POST_INFERENCE_MODE = false;
@@ -140,29 +177,6 @@ void parse_options(int argc , char *argv[], embeddingSD_t &the_graph)
       case 'e':
         the_graph.ONLY_KAPPAS = true;
         break;
-      case 'M':
-      {
-        const std::string mode = optarg;
-        if(mode == "baseline")
-        {
-          the_graph.OPTIMIZED_PERF_MODE = false;
-        }
-        else if(mode == "optimized")
-        {
-          the_graph.OPTIMIZED_PERF_MODE = true;
-        }
-        else
-        {
-          std::cerr << "Invalid mode '" << mode << "'. Use baseline or optimized." << std::endl;
-          print_usage();
-          print_help();
-          std::exit(1);
-        }
-        break;
-      }
-      case 'T':
-        the_graph.TIMING_JSON_MODE = true;
-        break;
       default:
         print_usage();
         print_help();
@@ -171,4 +185,4 @@ void parse_options(int argc , char *argv[], embeddingSD_t &the_graph)
   }
 }
 
-#endif
+#endif // EMBEDDINGS1_UNIX_HPP_INCLUDED
