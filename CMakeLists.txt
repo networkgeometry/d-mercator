@@ -5,6 +5,7 @@ include(CTest)
 option(DMERCATOR_RELEASE_O3 "Use -O3 in Release builds (default keeps -O2)." OFF)
 option(DMERCATOR_ENABLE_NATIVE "Enable -march=native for local tuning." OFF)
 option(DMERCATOR_ENABLE_LTO "Enable IPO/LTO in Release builds when supported." OFF)
+option(USE_CUDA "Build CUDA acceleration for embedding hotspots." OFF)
 
 set(DMERCATOR_RELEASE_OPT_FLAG "-O2")
 if(DMERCATOR_RELEASE_O3)
@@ -15,6 +16,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wshadow -pedantic")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} ${DMERCATOR_RELEASE_OPT_FLAG}")
 set(CMAKE_Fortran_FLAGS "-c -fpic -Wall -O3")
+
+if(USE_CUDA)
+  enable_language(CUDA)
+  set(CMAKE_CUDA_STANDARD 17)
+  set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+  find_package(CUDAToolkit REQUIRED)
+endif()
 
 if(DMERCATOR_ENABLE_NATIVE)
   add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-march=native>")
@@ -41,16 +49,25 @@ set(source_files "${source_dir}/embeddingSD_unix.cpp")
 set(source_generate_files "${source_dir}/generatingSD_unix.cpp")
 set(embedder_adapter_source "${source_dir}/dmercator/embedding/embedder.cpp")
 set(generator_adapter_source "${source_dir}/dmercator/core/generator.cpp")
+set(gpu_embedding_sources "")
+if(USE_CUDA)
+  set(gpu_embedding_sources
+    src/gpu/cuda_utils.cu
+    src/gpu/kernels.cu
+    src/gpu/gpu_context.cu
+  )
+endif()
 
 set(include_dir "${PROJECT_SOURCE_DIR}/include/")
 file(GLOB include_files "${include_dir}/*.hpp")
 
-add_executable(mercator ${source_files} ${include_files})
+add_executable(mercator ${source_files} ${include_files} ${gpu_embedding_sources})
 add_executable(generatingSD ${source_generate_files} ${include_files})
 add_executable(mercator_legacy apps/mercator_legacy.cpp include/legacy/embeddingSD_legacy.hpp include/legacy/embeddingSD_unix_legacy.hpp)
 add_executable(embed_sd
   apps/embed_sd.cpp
   ${embedder_adapter_source}
+  ${gpu_embedding_sources}
   ${include_files}
   include/dmercator/io/coordinates_csv.hpp
   include/dmercator/embedding/embedder.hpp
@@ -76,6 +93,17 @@ target_link_libraries(mercator_legacy trapecis_Sd Threads::Threads)
 target_link_libraries(embed_sd trapecis_Sd Threads::Threads)
 target_link_libraries(generate_sd trapecis_Sd Threads::Threads)
 
+if(USE_CUDA)
+  target_compile_definitions(mercator PRIVATE DMERCATOR_USE_CUDA=1)
+  target_compile_definitions(embed_sd PRIVATE DMERCATOR_USE_CUDA=1)
+  target_compile_options(mercator PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false>)
+  target_compile_options(embed_sd PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false>)
+  target_link_libraries(mercator CUDA::cudart)
+  target_link_libraries(embed_sd CUDA::cudart)
+  set_target_properties(mercator PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  set_target_properties(embed_sd PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+endif()
+
 if(OpenMP_CXX_FOUND)
   target_link_libraries(mercator OpenMP::OpenMP_CXX)
   target_link_libraries(generatingSD OpenMP::OpenMP_CXX)
@@ -87,9 +115,16 @@ endif()
 if(BUILD_TESTING)
   add_executable(perf_preservation_smoke
     tests/perf_preservation_smoke.cpp
+    ${gpu_embedding_sources}
     ${include_files}
   )
   target_link_libraries(perf_preservation_smoke trapecis_Sd Threads::Threads)
+  if(USE_CUDA)
+    target_compile_definitions(perf_preservation_smoke PRIVATE DMERCATOR_USE_CUDA=1)
+    target_compile_options(perf_preservation_smoke PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false>)
+    target_link_libraries(perf_preservation_smoke CUDA::cudart)
+    set_target_properties(perf_preservation_smoke PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  endif()
   if(OpenMP_CXX_FOUND)
     target_link_libraries(perf_preservation_smoke OpenMP::OpenMP_CXX)
   endif()

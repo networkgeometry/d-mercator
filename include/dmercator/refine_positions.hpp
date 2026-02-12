@@ -168,8 +168,6 @@ int embeddingSD_t::refine_angle(int v1)
     return local_loglikelihood;
   };
 
-  double best_loglikelihood = compute_local_loglikelihood(best_angle);
-
   double da;
   double sum_sin_theta = 0;
   double sum_cos_theta = 0;
@@ -199,27 +197,71 @@ int embeddingSD_t::refine_angle(int v1)
   max_angle /= 2;
 
   int _nb_new_angles_to_try = MIN_NB_ANGLES_TO_TRY * std::max(1.0, std::log(static_cast<double>(nb_vertices)));
+  std::vector<double> candidate_angles;
+  candidate_angles.reserve(static_cast<size_t>(_nb_new_angles_to_try) + 1);
+  candidate_angles.push_back(best_angle);
   for(int e(0); e<_nb_new_angles_to_try; ++e)
   {
-
     double tmp_angle = (normal_01(engine) * max_angle) + average_theta;
     while(tmp_angle > (2 * PI))
       tmp_angle = tmp_angle - (2 * PI);
     while(tmp_angle < 0)
       tmp_angle = tmp_angle + (2 * PI);
+    candidate_angles.push_back(tmp_angle);
+  }
 
-    const double tmp_loglikelihood = compute_local_loglikelihood(tmp_angle);
+  std::vector<double> candidate_scores(candidate_angles.size(), 0.0);
+#if defined(DMERCATOR_USE_CUDA)
+  bool scored_on_gpu = false;
+  if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE)
+  {
+    scored_on_gpu = dmercator::gpu::evaluate_refine_s1_candidates(v1, beta, pair_prefactor, neighbors, candidate_angles, candidate_scores);
+    if(!scored_on_gpu)
+    {
+      CUDA_REFINEMENT_ACTIVE = false;
+      if(!QUIET_MODE)
+      {
+        std::clog << TAB << "WARNING: CUDA S1 refinement scoring failed; falling back to CPU for remaining vertices. "
+                  << dmercator::gpu::last_error() << std::endl;
+      }
+    }
+  }
+  if(!scored_on_gpu)
+#endif
+  {
+    for(size_t idx = 0; idx < candidate_angles.size(); ++idx)
+    {
+      candidate_scores[idx] = compute_local_loglikelihood(candidate_angles[idx]);
+    }
+  }
 
+  double best_loglikelihood = candidate_scores[0];
+  for(size_t idx = 1; idx < candidate_angles.size(); ++idx)
+  {
+    const double tmp_loglikelihood = candidate_scores[idx];
     if(tmp_loglikelihood > best_loglikelihood)
     {
       best_loglikelihood = tmp_loglikelihood;
-      best_angle = tmp_angle;
+      best_angle = candidate_angles[idx];
       has_moved = 1;
     }
   }
 
   theta[v1] = best_angle;
-
+#if defined(DMERCATOR_USE_CUDA)
+  if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE)
+  {
+    if(!dmercator::gpu::update_refine_theta(v1, best_angle))
+    {
+      CUDA_REFINEMENT_ACTIVE = false;
+      if(!QUIET_MODE)
+      {
+        std::clog << TAB << "WARNING: CUDA S1 refinement state update failed; falling back to CPU for remaining vertices. "
+                  << dmercator::gpu::last_error() << std::endl;
+      }
+    }
+  }
+#endif
   return has_moved;
 }
 
@@ -315,6 +357,7 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
   auto best_position = d_positions[v1];
   const auto &neighbors = adjacency_flat_list[v1];
 
+  const int position_stride = dim + 1;
   const double inv_dim = 1.0 / static_cast<double>(dim);
   if(scratch_pair_prefactor.size() != static_cast<size_t>(nb_vertices))
   {
@@ -331,7 +374,27 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
     pair_prefactor[v2] = radius / std::pow(mu * kappa[v1] * kappa[v2], inv_dim);
   }
 
-  auto compute_local_loglikelihood = [&](const std::vector<double> &position) -> double
+  auto compute_angle_with_position = [&](const double *pos1, const std::vector<double> &pos2) -> double
+  {
+    double angle = 0;
+    double norm1 = 0;
+    double norm2 = 0;
+    for(int i = 0; i < position_stride; ++i)
+    {
+      angle += pos1[i] * pos2[i];
+      norm1 += pos1[i] * pos1[i];
+      norm2 += pos2[i] * pos2[i];
+    }
+    norm1 /= std::sqrt(norm1);
+    norm2 /= std::sqrt(norm2);
+
+    const auto result = angle / (norm1 * norm2);
+    if(std::fabs(result - 1) < NUMERICAL_ZERO)
+      return 0;
+    return std::acos(result);
+  };
+
+  auto compute_local_loglikelihood = [&](const double *position_ptr) -> double
   {
     double local_loglikelihood = 0;
     for(int v2(0); v2<nb_vertices; ++v2)
@@ -340,14 +403,14 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
       {
         continue;
       }
-      const double dtheta = compute_angle_d_vectors(position, d_positions[v2]);
+      const double dtheta = compute_angle_with_position(position_ptr, d_positions[v2]);
       const double chi = pair_prefactor[v2] * dtheta;
       const double prob = 1 / (1 + std::pow(chi, beta));
       local_loglikelihood += std::log(1 - prob);
     }
     for(const int v2 : neighbors)
     {
-      const double dtheta = compute_angle_d_vectors(position, d_positions[v2]);
+      const double dtheta = compute_angle_with_position(position_ptr, d_positions[v2]);
       const double chi = pair_prefactor[v2] * dtheta;
       const double prob = 1 / (1 + std::pow(chi, beta));
       local_loglikelihood += std::log(prob);
@@ -355,11 +418,9 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
     return local_loglikelihood;
   };
 
-  double best_loglikelihood = compute_local_loglikelihood(best_position);
-
-  if(scratch_mean_vector.size() != static_cast<size_t>(dim + 1))
+  if(scratch_mean_vector.size() != static_cast<size_t>(position_stride))
   {
-    scratch_mean_vector.assign(dim + 1, 0.0);
+    scratch_mean_vector.assign(position_stride, 0.0);
   }
   else
   {
@@ -370,7 +431,7 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
   {
     const auto &pos2 = d_positions[v2];
     const double inv_k2_squared = 1.0 / (kappa[v2] * kappa[v2]);
-    for (int i=0; i<dim+1; ++i)
+    for (int i = 0; i < position_stride; ++i)
       mean_vector[i] += pos2[i] * inv_k2_squared;
   }
   normalize_and_rescale_vector(mean_vector, radius);
@@ -385,31 +446,88 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
   max_angle /= 2;
 
   int _nb_new_angles_to_try = MIN_NB_ANGLES_TO_TRY * std::max(1.0, std::log(static_cast<double>(nb_vertices)));
-  if(scratch_proposed_vector.size() != static_cast<size_t>(dim + 1))
+  if(scratch_proposed_vector.size() != static_cast<size_t>(position_stride))
   {
-    scratch_proposed_vector.assign(dim + 1, 0.0);
+    scratch_proposed_vector.assign(position_stride, 0.0);
   }
   auto &proposed_position = scratch_proposed_vector;
   const double inv_radius = 1.0 / radius;
+
+  std::vector<double> candidate_positions_flat;
+  candidate_positions_flat.reserve(static_cast<size_t>(_nb_new_angles_to_try + 1) * static_cast<size_t>(position_stride));
+  candidate_positions_flat.insert(candidate_positions_flat.end(), best_position.begin(), best_position.end());
   for(int e(0); e<_nb_new_angles_to_try; ++e)
   {
-
-    for (int i=0; i<dim+1; ++i)
+    for(int i = 0; i < position_stride; ++i)
       proposed_position[i] = max_angle * normal_01(engine) + mean_vector[i] * inv_radius;
     normalize_and_rescale_vector(proposed_position, radius);
+    candidate_positions_flat.insert(candidate_positions_flat.end(), proposed_position.begin(), proposed_position.end());
+  }
 
-    const double tmp_loglikelihood = compute_local_loglikelihood(proposed_position);
+  const size_t nb_candidates = candidate_positions_flat.size() / static_cast<size_t>(position_stride);
+  std::vector<double> candidate_scores(nb_candidates, 0.0);
+#if defined(DMERCATOR_USE_CUDA)
+  bool scored_on_gpu = false;
+  if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE)
+  {
+    scored_on_gpu = dmercator::gpu::evaluate_refine_sd_candidates(dim,
+                                                                   v1,
+                                                                   beta,
+                                                                   NUMERICAL_ZERO,
+                                                                   pair_prefactor,
+                                                                   neighbors,
+                                                                   candidate_positions_flat,
+                                                                   candidate_scores);
+    if(!scored_on_gpu)
+    {
+      CUDA_REFINEMENT_ACTIVE = false;
+      if(!QUIET_MODE)
+      {
+        std::clog << TAB << "WARNING: CUDA S^D refinement scoring failed; falling back to CPU for remaining vertices. "
+                  << dmercator::gpu::last_error() << std::endl;
+      }
+    }
+  }
+  if(!scored_on_gpu)
+#endif
+  {
+    for(size_t idx = 0; idx < nb_candidates; ++idx)
+    {
+      const double *candidate_ptr = candidate_positions_flat.data() + idx * static_cast<size_t>(position_stride);
+      candidate_scores[idx] = compute_local_loglikelihood(candidate_ptr);
+    }
+  }
 
+  double best_loglikelihood = candidate_scores[0];
+  for(size_t idx = 1; idx < nb_candidates; ++idx)
+  {
+    const double tmp_loglikelihood = candidate_scores[idx];
     if(tmp_loglikelihood > best_loglikelihood)
     {
       best_loglikelihood = tmp_loglikelihood;
-      best_position = proposed_position;
+      const size_t offset = idx * static_cast<size_t>(position_stride);
+      std::copy(candidate_positions_flat.begin() + static_cast<std::ptrdiff_t>(offset),
+                candidate_positions_flat.begin() + static_cast<std::ptrdiff_t>(offset + position_stride),
+                best_position.begin());
       has_moved = 1;
     }
   }
 
   d_positions[v1] = best_position;
-
+#if defined(DMERCATOR_USE_CUDA)
+  if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE)
+  {
+    if(!dmercator::gpu::update_refine_position(dim, v1, best_position))
+    {
+      CUDA_REFINEMENT_ACTIVE = false;
+      if(!QUIET_MODE)
+      {
+        std::clog << TAB << "WARNING: CUDA S^D refinement state update failed; falling back to CPU for remaining vertices. "
+                  << dmercator::gpu::last_error() << std::endl;
+      }
+    }
+  }
+#endif
   return has_moved;
 }
 
@@ -418,8 +536,26 @@ void embeddingSD_t::refine_positions(int dim)
   if(!QUIET_MODE) { std::clog << "Refining the positions..."; }
   if(!QUIET_MODE) { std::clog << std::endl; }
 
+  CUDA_REFINEMENT_ACTIVE = false;
+
   if(dim == 1)
   {
+#if defined(DMERCATOR_USE_CUDA)
+    if(OPTIMIZED_PERF_MODE && CUDA_MODE)
+    {
+      CUDA_REFINEMENT_ACTIVE = dmercator::gpu::begin_refine_s1(theta);
+      if(!CUDA_REFINEMENT_ACTIVE)
+      {
+        CUDA_MODE = false;
+        if(!QUIET_MODE)
+        {
+          std::clog << TAB << "WARNING: CUDA S1 refinement initialization failed; continuing on CPU. "
+                    << dmercator::gpu::last_error() << std::endl;
+        }
+      }
+    }
+#endif
+
     double start_time, stop_time;
     std::string vertices_range;
     int delta_nb_vertices = nb_vertices / 19.999999;
@@ -440,6 +576,7 @@ void embeddingSD_t::refine_positions(int dim)
       stop_time = time_since_epoch_in_seconds();
       if(!QUIET_MODE) { std::clog << "...done in " << std::setw(6) << std::fixed << stop_time - start_time << " seconds (" << std::setw(std::log10(delta_nb_vertices) + 1) << v_m << "/" << std::setw(std::log10(delta_nb_vertices) + 1) << n_v << " changed position)" << std::endl; }
     }
+    CUDA_REFINEMENT_ACTIVE = false;
     if(!QUIET_MODE) { std::clog << "                         .............................................................done." << std::endl; }
     if(!QUIET_MODE) { std::clog << std::endl; }
     return;
@@ -451,6 +588,22 @@ void embeddingSD_t::refine_positions(int dim)
   if(delta_nb_vertices < 1) { delta_nb_vertices = 1; }
   int width = 2 * (std::log10(nb_vertices) + 1) + 6;
   const auto radius = compute_radius(dim, nb_vertices);
+#if defined(DMERCATOR_USE_CUDA)
+  if(OPTIMIZED_PERF_MODE && CUDA_MODE)
+  {
+    CUDA_REFINEMENT_ACTIVE = dmercator::gpu::begin_refine_sd(dim, d_positions);
+    if(!CUDA_REFINEMENT_ACTIVE)
+    {
+      CUDA_MODE = false;
+      if(!QUIET_MODE)
+      {
+        std::clog << TAB << "WARNING: CUDA S^D refinement initialization failed; continuing on CPU. "
+                  << dmercator::gpu::last_error() << std::endl;
+      }
+    }
+  }
+#endif
+
   for(int v_i(0), v_f(0), v_m, n_v; v_f<nb_vertices;)
   {
     v_f = (v_i + delta_nb_vertices);
@@ -467,6 +620,7 @@ void embeddingSD_t::refine_positions(int dim)
     if(!QUIET_MODE) { std::clog << "...done in " << std::setw(6) << std::fixed << stop_time - start_time << " seconds (" << std::setw(std::log10(delta_nb_vertices) + 1) << v_m << "/" << std::setw(std::log10(delta_nb_vertices) + 1) << n_v << " changed position)" << std::endl; }
   }
 
+  CUDA_REFINEMENT_ACTIVE = false;
   if(!QUIET_MODE) { std::clog << "                         .............................................................done." << std::endl; }
   if(!QUIET_MODE) { std::clog << std::endl; }
 }

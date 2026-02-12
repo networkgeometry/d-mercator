@@ -6,6 +6,7 @@
 #include <cmath>
 #include <ctime>
 #include <complex>
+#include <cstddef>
 #include <exception>
 #include <fstream>
 #include <functional>
@@ -27,6 +28,9 @@
 #include "integrate_expected_degree.hpp"
 #include "readjust_positions.hpp"
 #include "dmercator/core/timing.hpp"
+#if defined(DMERCATOR_USE_CUDA)
+#include "dmercator/gpu/gpu_context.hpp"
+#endif
 
 class embeddingSD_t
 {
@@ -73,6 +77,10 @@ class embeddingSD_t
     int DIMENSION = 2;
 
     bool ONLY_KAPPAS = false;
+
+    // Optional CUDA acceleration (runtime switch).
+    bool CUDA_MODE = false;
+    bool CUDA_DETERMINISTIC_MODE = true;
 
   public:
 
@@ -323,6 +331,9 @@ class embeddingSD_t
     std::vector<double> scratch_pair_prefactor;
     std::vector<double> scratch_mean_vector;
     std::vector<double> scratch_proposed_vector;
+
+    bool CUDA_RUNTIME_AVAILABLE = false;
+    bool CUDA_REFINEMENT_ACTIVE = false;
 
   public:
 

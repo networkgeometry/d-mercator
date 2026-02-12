@@ -63,6 +63,10 @@ The following options are available:
     -e             Only infer kappas for a given input network. Then exit and save these 
                    hidden degrees to file.
     -M [MODE]      Performance mode: baseline or optimized. Default: optimized.
+    -G, --gpu      Enable CUDA acceleration for supported hotspots (if built with USE_CUDA=ON).
+    -C, --cpu      Force CPU-only execution (disables CUDA path even if available).
+    -D             Enable deterministic CUDA mode (default).
+    -N             Disable deterministic CUDA mode.
     --timing_json  Print machine-readable stage timings (JSON) to stdout.
   )";
   std::cout << help << '\n';
@@ -82,12 +86,16 @@ void parse_options(int argc , char *argv[], embeddingSD_t &the_graph)
 
   const option long_options[] = {
     {"mode", required_argument, nullptr, 'M'},
+    {"gpu", no_argument, nullptr, 'G'},
+    {"cpu", no_argument, nullptr, 'C'},
+    {"deterministic", no_argument, nullptr, 'D'},
+    {"nondeterministic", no_argument, nullptr, 'N'},
     {"timing_json", no_argument, nullptr, 'T'},
     {nullptr, 0, nullptr, 0}
   };
 
   int opt;
-  while ((opt = getopt_long(argc, argv, "ab:cfko:r:qs:vd:eM:T", long_options, nullptr)) != -1)
+  while ((opt = getopt_long(argc, argv, "ab:cfko:r:qs:vd:eM:TGCDN", long_options, nullptr)) != -1)
   {
     switch(opt)
     {
@@ -162,6 +170,18 @@ void parse_options(int argc , char *argv[], embeddingSD_t &the_graph)
       }
       case 'T':
         the_graph.TIMING_JSON_MODE = true;
+        break;
+      case 'G':
+        the_graph.CUDA_MODE = true;
+        break;
+      case 'C':
+        the_graph.CUDA_MODE = false;
+        break;
+      case 'D':
+        the_graph.CUDA_DETERMINISTIC_MODE = true;
+        break;
+      case 'N':
+        the_graph.CUDA_DETERMINISTIC_MODE = false;
         break;
       default:
         print_usage();

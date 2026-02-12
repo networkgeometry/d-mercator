@@ -20,6 +20,9 @@ void embeddingSD_t::initialize()
   }
   engine.seed(SEED);
 
+  CUDA_REFINEMENT_ACTIVE = false;
+  CUDA_RUNTIME_AVAILABLE = false;
+
   if(!QUIET_MODE)
   {
     if(!VERBOSE_MODE)
@@ -31,6 +34,33 @@ void embeddingSD_t::initialize()
      std::clog.rdbuf(logfile.rdbuf());
     }
   }
+
+#if defined(DMERCATOR_USE_CUDA)
+  if(CUDA_MODE)
+  {
+    const auto cuda_status = dmercator::gpu::initialize(CUDA_DETERMINISTIC_MODE);
+    CUDA_RUNTIME_AVAILABLE = cuda_status.available;
+    if(!cuda_status.available)
+    {
+      CUDA_MODE = false;
+      if(!QUIET_MODE)
+      {
+        std::clog << TAB << "WARNING: CUDA requested but unavailable; falling back to CPU. "
+                  << cuda_status.message << std::endl;
+      }
+    }
+  }
+#else
+  if(CUDA_MODE)
+  {
+    CUDA_MODE = false;
+    if(!QUIET_MODE)
+    {
+      std::clog << TAB << "WARNING: CUDA requested, but this binary was built without `USE_CUDA=ON`. "
+                << "Falling back to CPU." << std::endl;
+    }
+  }
+#endif
 
   if(!QUIET_MODE) { std::clog                                                                                                  << std::endl; }
   if(!QUIET_MODE) { std::clog << "===========================================================================================" << std::endl; }

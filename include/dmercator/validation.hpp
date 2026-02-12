@@ -113,6 +113,39 @@ void embeddingSD_t::analyze_simulated_adjacency_list()
 }
 void embeddingSD_t::compute_inferred_ensemble_expected_degrees(int dim, double radius)
 {
+#if defined(DMERCATOR_USE_CUDA)
+  if(CUDA_MODE)
+  {
+    bool computed_on_gpu = false;
+    if(dim == 1)
+    {
+      computed_on_gpu = dmercator::gpu::compute_inferred_expected_degrees_s1(beta, mu, theta, kappa, inferred_ensemble_expected_degree);
+    }
+    else
+    {
+      computed_on_gpu = dmercator::gpu::compute_inferred_expected_degrees_sd(dim,
+                                                                              beta,
+                                                                              mu,
+                                                                              radius,
+                                                                              NUMERICAL_ZERO,
+                                                                              d_positions,
+                                                                              kappa,
+                                                                              inferred_ensemble_expected_degree);
+    }
+    if(computed_on_gpu)
+    {
+      return;
+    }
+    CUDA_MODE = false;
+    CUDA_REFINEMENT_ACTIVE = false;
+    if(!QUIET_MODE)
+    {
+      std::clog << TAB << "WARNING: CUDA expected-degree computation failed; switching to CPU. "
+                << dmercator::gpu::last_error() << std::endl;
+    }
+  }
+#endif
+
   if(dim == 1)
   {
 
@@ -1290,6 +1323,9 @@ void embeddingSD_t::finalize()
       std::clog << TAB << "CUSTOM_OUTPUT_ROOTNAME_MODE            " << (CUSTOM_OUTPUT_ROOTNAME_MODE ? "true" : "false")
                 << std::endl;
       std::clog << TAB << "CUSTOM_SEED                            " << (CUSTOM_SEED ? "true" : "false") << std::endl;
+      std::clog << TAB << "CUDA_MODE                              " << (CUDA_MODE ? "true" : "false") << std::endl;
+      std::clog << TAB << "CUDA_DETERMINISTIC_MODE                " << (CUDA_DETERMINISTIC_MODE ? "true" : "false") << std::endl;
+      std::clog << TAB << "CUDA_RUNTIME_AVAILABLE                 " << (CUDA_RUNTIME_AVAILABLE ? "true" : "false") << std::endl;
       std::clog << TAB << "EDGELIST_FILENAME:                     " << EDGELIST_FILENAME << std::endl;
       std::clog << TAB << "EXP_CLUST_NB_INTEGRATION_MC_STEPS      " << EXP_CLUST_NB_INTEGRATION_MC_STEPS << std::endl;
       std::clog << TAB << "EXP_DIST_NB_INTEGRATION_STEPS          " << EXP_DIST_NB_INTEGRATION_STEPS << std::endl;
@@ -1356,6 +1392,7 @@ void embeddingSD_t::finalize()
       std::cout << std::fixed << std::setprecision(6);
       std::cout << "{"
                 << "\"mode\":\"" << (OPTIMIZED_PERF_MODE ? "optimized" : "baseline") << "\","
+                << "\"backend\":\"" << (CUDA_MODE ? "cuda" : "cpu") << "\","
                 << "\"dimension\":" << DIMENSION << ","
                 << "\"seed\":" << SEED << ","
                 << "\"nb_vertices\":" << nb_vertices << ","
