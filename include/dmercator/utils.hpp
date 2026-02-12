@@ -1,154 +1,29 @@
-#ifndef DMERCATOR_CORE_HELPERS_HPP
-#define DMERCATOR_CORE_HELPERS_HPP
+#ifndef DMERCATOR_UTILS_HPP
+#define DMERCATOR_UTILS_HPP
 
-int embeddingSD_t::get_root(int i, std::vector<int> &clust_id)
-{
-  while(i != clust_id[i])
-  {
-    clust_id[i] = clust_id[clust_id[i]];
-    i = clust_id[i];
-  }
-  return i;
-}
-
-void embeddingSD_t::merge_clusters(std::vector<int> &size, std::vector<int> &clust_id)
+std::string embeddingSD_t::format_time(time_t _time)
 {
 
-  int v1, v2, v3, v4;
+  struct tm *aTime = gmtime(& _time);
+  int year    = aTime->tm_year + 1900;
+  int month   = aTime->tm_mon + 1;
+  int day     = aTime->tm_mday;
+  int hours   = aTime->tm_hour;
+  int minutes = aTime->tm_min;
 
-  std::set<int>::iterator it, end;
+  std::string the_time = std::to_string(year) + "/";
+  if(month < 10)
+    the_time += "0";
+  the_time += std::to_string(month) + "/";
+  if(day < 10)
+    the_time += "0";
+  the_time += std::to_string(day) + " " + std::to_string(hours) + ":";
+  if(minutes < 10)
+    the_time += "0";
+  the_time += std::to_string(minutes) + " UTC";
 
-  for(int i(0); i<nb_vertices; ++i)
-  {
-
-    it  = adjacency_list[i].begin();
-    end = adjacency_list[i].end();
-    for(; it!=end; ++it)
-    {
-      if(get_root(i, clust_id) != get_root(*it, clust_id))
-      {
-
-        v1 = i;
-        v2 = *it;
-        if(size[v2] > size[v1])
-          std::swap(v1, v2);
-        v3 = get_root(v1, clust_id);
-        v4 = get_root(v2, clust_id);
-        clust_id[v4] = v3;
-        size[v3] += size[v4];
-      }
-    }
-  }
+  return the_time;
 }
-
-void embeddingSD_t::check_connected_components()
-{
-
-  std::vector<double> Vertex2Prop(nb_vertices, -1);
-
-  std::vector<int> connected_components_size;
-
-  std::set< std::pair<int, int> > ordered_connected_components;
-
-  std::vector<int> clust_id(nb_vertices);
-  std::vector<int> clust_size(nb_vertices, 1);
-  for(int v(0); v<nb_vertices; ++v)
-  {
-    clust_id[v] = v;
-  }
-
-  merge_clusters(clust_size, clust_id);
-  clust_size.clear();
-
-  int nb_conn_comp = 0;
-  int comp_id;
-  std::map<int, int> CompID;
-  for(int v(0); v<nb_vertices; ++v)
-  {
-    comp_id = get_root(v, clust_id);
-    if(CompID.find(comp_id) == CompID.end())
-    {
-      CompID[comp_id] = nb_conn_comp;
-      connected_components_size.push_back(0);
-      ++nb_conn_comp;
-    }
-    Vertex2Prop[v] = CompID[comp_id];
-    connected_components_size[CompID[comp_id]] += 1;
-  }
-
-  for(int c(0); c<nb_conn_comp; ++c)
-  {
-    ordered_connected_components.insert( std::make_pair(connected_components_size[c], c) );
-  }
-
-  int lcc_id = (--ordered_connected_components.end())->second;
-  int lcc_size = (--ordered_connected_components.end())->first;
-
-  if(lcc_size != nb_vertices)
-  {
-    if(!QUIET_MODE) { std::clog << std::endl; }
-    if(!QUIET_MODE) { std::clog << TAB << "- More than one component found!!" << std::endl; }
-    if(!QUIET_MODE) { std::clog << TAB << "- " << lcc_size << "/" << nb_vertices << " vertices in the largest component." << std::endl; }
-    std::cerr << std::endl;
-    std::cerr << "More than one component found (" << lcc_size << "/" << nb_vertices << ") vertices in the largest component." << std::endl;
-
-    std::string edgelist_rootname;
-    size_t lastdot = EDGELIST_FILENAME.find_last_of(".");
-    if(lastdot == std::string::npos)
-    {
-      edgelist_rootname = EDGELIST_FILENAME;
-    }
-    edgelist_rootname = EDGELIST_FILENAME.substr(0, lastdot);
-
-    std::string edgelist_filename = edgelist_rootname + "_GC.edge";
-
-    std::fstream edgelist_file(edgelist_filename.c_str(), std::fstream::out);
-    if( !edgelist_file.is_open() )
-    {
-      std::cerr << "Could not open file: " << edgelist_filename << "." << std::endl;
-      std::terminate();
-    }
-
-    std::set<int>::iterator it, end;
-    width_names = 14;
-    for(int v1(0), v2, c1, c2; v1<nb_vertices; ++v1)
-    {
-      c1 = Vertex2Prop[v1];
-      if(c1 == lcc_id)
-      {
-        it  = adjacency_list[v1].begin();
-        end = adjacency_list[v1].end();
-        for(; it!=end; ++it)
-        {
-          v2 = *it;
-          c2 = Vertex2Prop[v2];
-          if(c2 == lcc_id)
-          {
-            if(v1 < v2)
-            {
-              edgelist_file << std::setw(width_names) << Num2Name[v1] << " ";
-              edgelist_file << std::setw(width_names) << Num2Name[v2] << " ";
-              edgelist_file << std::endl;
-            }
-          }
-        }
-      }
-    }
-
-    edgelist_file.close();
-
-    if(!QUIET_MODE) { std::clog << TAB << "- Edges belonging to the largest component saved to " << edgelist_rootname + "_GC.edge." << std::endl; }
-    if(!QUIET_MODE) { std::clog << TAB << "- Please rerun the program using this new edgelist." << std::endl; }
-    if(!QUIET_MODE) { std::clog << std::endl; }
-
-    if(QUIET_MODE)  { std::clog << std::endl; }
-    std::cerr << "Edges belonging to the largest component saved to " << edgelist_rootname + "_GC.edge. Please rerun the program using this new edgelist." << std::endl;
-    std::cerr << std::endl;
-
-    std::exit(12);
-  }
-}
-
 inline double embeddingSD_t::calculateMu() const
 {
   return beta * std::sin(PI / beta) / (2.0 * PI * average_degree);

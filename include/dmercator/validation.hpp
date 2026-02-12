@@ -1,6 +1,220 @@
-#ifndef DMERCATOR_IO_EMBEDDING_IO_HPP
-#define DMERCATOR_IO_EMBEDDING_IO_HPP
+#ifndef DMERCATOR_VALIDATION_HPP
+#define DMERCATOR_VALIDATION_HPP
 
+void embeddingSD_t::analyze_simulated_adjacency_list()
+{
+
+  simulated_degree.clear();
+  simulated_degree.resize(nb_vertices);
+  simulated_sum_degree_of_neighbors.clear();
+  simulated_sum_degree_of_neighbors.resize(nb_vertices, 0);
+  simulated_nb_triangles.clear();
+  simulated_nb_triangles.resize(nb_vertices, 0);
+  simulated_stat_degree.clear();
+  simulated_stat_sum_degree_neighbors.clear();
+  simulated_stat_avg_degree_neighbors.clear();
+  simulated_stat_nb_triangles.clear();
+  simulated_stat_clustering.clear();
+
+  std::set<int>::iterator it, end;
+  for(int v1(0), d1; v1<nb_vertices; ++v1)
+  {
+    d1 = simulated_adjacency_list[v1].size();
+    simulated_degree[v1] = d1;
+    it = simulated_adjacency_list[v1].begin();
+    end = simulated_adjacency_list[v1].end();
+    for(; it!=end; ++it)
+    {
+      simulated_sum_degree_of_neighbors[*it] += d1;
+    }
+  }
+
+  double nb_triangles, tmp_val;
+
+  std::vector<int> intersection;
+
+  std::set<int> neighbors_v2;
+
+  std::set<int>::iterator it1, end1, it2, end2;
+  std::map<int, std::vector<int> >::iterator it3, end3;
+  std::vector<int>::iterator it4;
+
+  for(int v1(0), d1; v1<nb_vertices; ++v1)
+  {
+
+    nb_triangles = 0;
+
+    d1 = simulated_degree[v1];
+    if( d1 > 1 )
+    {
+
+      it1 = simulated_adjacency_list[v1].begin();
+      end1 = simulated_adjacency_list[v1].end();
+      for(; it1!=end1; ++it1)
+      {
+
+        if( simulated_degree[*it1] > 1 )
+        {
+
+          it2 = simulated_adjacency_list[*it1].begin();
+          end2 = simulated_adjacency_list[*it1].end();
+          neighbors_v2.clear();
+          for(; it2!=end2; ++it2)
+          {
+            if(*it1 < *it2)
+            {
+              neighbors_v2.insert(*it2);
+            }
+          }
+
+          if(neighbors_v2.size() > 0)
+          {
+            intersection.clear();
+            intersection.resize(std::min(simulated_adjacency_list[v1].size(), neighbors_v2.size()));
+            it4 = std::set_intersection(simulated_adjacency_list[v1].begin(), simulated_adjacency_list[v1].end(),
+                                        neighbors_v2.begin(), neighbors_v2.end(), intersection.begin());
+            intersection.resize(it4-intersection.begin());
+            nb_triangles += intersection.size();
+          }
+        }
+      }
+
+      simulated_nb_triangles[v1] = nb_triangles;
+
+    }
+  }
+
+  for(int v1(0), d1; v1<nb_vertices; ++v1)
+  {
+
+    d1 = simulated_degree[v1];
+
+    if( simulated_stat_degree.find(d1) == simulated_stat_degree.end() )
+    {
+      simulated_stat_degree[d1] = 0;
+      simulated_stat_sum_degree_neighbors[d1] = 0;
+      simulated_stat_avg_degree_neighbors[d1] = 0;
+      simulated_stat_nb_triangles[d1] = 0;
+      simulated_stat_clustering[d1] = 0;
+    }
+
+    simulated_stat_degree[d1] += 1;
+    if(d1 > 0)
+    {
+      simulated_stat_sum_degree_neighbors[d1] += simulated_sum_degree_of_neighbors[v1];
+      simulated_stat_avg_degree_neighbors[d1] += simulated_sum_degree_of_neighbors[v1] / d1;
+    }
+    if(d1 > 1)
+    {
+      simulated_stat_nb_triangles[d1] += simulated_nb_triangles[v1];
+      simulated_stat_clustering[d1] += 2 * simulated_nb_triangles[v1] / d1 / (d1 - 1);
+    }
+  }
+}
+void embeddingSD_t::compute_inferred_ensemble_expected_degrees(int dim, double radius)
+{
+  if(dim == 1)
+  {
+
+    double kappa1, theta1, dtheta, prob;
+    const double prefactor = nb_vertices / (2 * PI * mu);
+    inferred_ensemble_expected_degree.clear();
+    inferred_ensemble_expected_degree.resize(nb_vertices, 0);
+    for(int v1(0); v1<nb_vertices; ++v1)
+    {
+      kappa1 = kappa[v1];
+      theta1 = theta[v1];
+      for(int v2(v1 + 1); v2<nb_vertices; ++v2)
+      {
+        dtheta = PI - std::fabs(PI - std::fabs(theta1 - theta[v2]));
+        prob = 1 / (1 + std::pow((prefactor * dtheta) / (kappa1 * kappa[v2]), beta));
+        inferred_ensemble_expected_degree[v1] += prob;
+        inferred_ensemble_expected_degree[v2] += prob;
+      }
+    }
+    return;
+  }
+
+  inferred_ensemble_expected_degree.clear();
+  inferred_ensemble_expected_degree.resize(nb_vertices, 0);
+  const double inv_dim = 1.0 / static_cast<double>(dim);
+  for(int v1=0; v1<nb_vertices; ++v1) {
+    const auto &pos1 = d_positions[v1];
+    const double kappa1 = kappa[v1];
+    for(int v2(v1 + 1); v2<nb_vertices; ++v2) {
+      const auto dtheta = compute_angle_d_vectors(pos1, d_positions[v2]);
+      const auto chi = radius * dtheta / std::pow(mu * kappa1 * kappa[v2], inv_dim);
+      const auto prob = 1 / (1 + std::pow(chi, beta));
+      inferred_ensemble_expected_degree[v1] += prob;
+      inferred_ensemble_expected_degree[v2] += prob;
+    }
+  }
+}
+
+void embeddingSD_t::compute_inferred_ensemble_expected_degrees()
+{
+  compute_inferred_ensemble_expected_degrees(1, nb_vertices / (2 * PI));
+}
+void embeddingSD_t::generate_simulated_adjacency_list(int dim, bool random_positions=true)
+{
+  if(dim == 1)
+  {
+
+    simulated_adjacency_list.clear();
+    simulated_adjacency_list.resize(nb_vertices);
+
+    double kappa1, theta1, dtheta, prob;
+    double prefactor = nb_vertices / (2 * PI * mu);
+    for(int v1(0); v1<nb_vertices; ++v1)
+    {
+      kappa1 = kappa[v1];
+      theta1 = theta[v1];
+      for(int v2(v1 + 1); v2<nb_vertices; ++v2)
+      {
+        dtheta = PI - std::fabs(PI - std::fabs(theta1 - theta[v2]));
+        prob = 1 / (1 + std::pow((prefactor * dtheta) / (kappa1 * kappa[v2]), beta));
+        if(uniform_01(engine) < prob)
+        {
+          simulated_adjacency_list[v1].insert(v2);
+          simulated_adjacency_list[v2].insert(v1);
+        }
+      }
+    }
+    return;
+  }
+
+  const auto radius = compute_radius(dim, nb_vertices);
+  if (random_positions) {
+    d_positions.clear();
+    d_positions.resize(nb_vertices);
+    for (int i = 0; i < nb_vertices; ++i)
+      d_positions[i] = generate_random_d_vector(dim, radius);
+  }
+  mu = calculate_mu(dim);
+
+  simulated_adjacency_list.clear();
+  simulated_adjacency_list.resize(nb_vertices);
+  const double inv_dim = 1.0 / static_cast<double>(dim);
+
+  for (int v1=0; v1 < nb_vertices; ++v1) {
+    const auto &positions1 = d_positions[v1];
+    const double kappa1 = kappa[v1];
+    for (int v2 = v1 + 1; v2 < nb_vertices; ++v2) {
+      const auto dtheta = compute_angle_d_vectors(positions1, d_positions[v2]);
+      const auto chi = radius * dtheta / std::pow(mu * kappa1 * kappa[v2], inv_dim);
+      const auto prob = 1 / (1 + std::pow(chi, beta));
+      if (uniform_01(engine) < prob) {
+        simulated_adjacency_list[v1].insert(v2);
+        simulated_adjacency_list[v2].insert(v1);
+      }
+    }
+  }
+}
+
+void embeddingSD_t::generate_simulated_adjacency_list()
+{
+  generate_simulated_adjacency_list(1, true);
+}
 void embeddingSD_t::save_inferred_connection_probability(int dim)
 {
   if(dim == 1)
@@ -1048,6 +1262,113 @@ double embeddingSD_t::time_since_epoch_in_seconds()
 
   clock_t t = clock();
   return ((float)t) / (CLOCKS_PER_SEC);
+}
+
+void embeddingSD_t::finalize()
+{
+
+  std::clog << std::resetiosflags(std::ios::floatfield | std::ios::fixed | std::ios::showpoint);
+
+  if (!QUIET_MODE) {
+      std::clog << std::endl;
+      std::clog << "Internal parameters and options" << std::endl;
+      std::clog << TAB << "ALREADY_INFERRED_PARAMETERS_FILENAME   " << ALREADY_INFERRED_PARAMETERS_FILENAME
+                << std::endl;
+      std::clog << TAB << "BETA_ABS_MAX                           " << BETA_ABS_MAX << std::endl;
+      std::clog << TAB << "BETA_ABS_MIN                           " << BETA_ABS_MIN << std::endl;
+      std::clog << TAB << "CHARACTERIZATION_MODE                  " << (CHARACTERIZATION_MODE ? "true" : "false")
+                << std::endl;
+      std::clog << TAB << "CHARACTERIZATION_NB_GRAPHS             " << CHARACTERIZATION_NB_GRAPHS << std::endl;
+      std::clog << TAB << "CLEAN_RAW_OUTPUT_MODE                  " << (CLEAN_RAW_OUTPUT_MODE ? "true" : "false")
+                << std::endl;
+
+      std::clog << TAB << "CUSTOM_BETA                            " << (CUSTOM_BETA ? "true" : "false") << std::endl;
+      std::clog << TAB << "CUSTOM_CHARACTERIZATION_NB_GRAPHS      "
+                << (CUSTOM_CHARACTERIZATION_NB_GRAPHS ? "true" : "false") << std::endl;
+      std::clog << TAB << "CUSTOM_INFERRED_COORDINATES            " << (CUSTOM_INFERRED_COORDINATES ? "true" : "false")
+                << std::endl;
+      std::clog << TAB << "CUSTOM_OUTPUT_ROOTNAME_MODE            " << (CUSTOM_OUTPUT_ROOTNAME_MODE ? "true" : "false")
+                << std::endl;
+      std::clog << TAB << "CUSTOM_SEED                            " << (CUSTOM_SEED ? "true" : "false") << std::endl;
+      std::clog << TAB << "EDGELIST_FILENAME:                     " << EDGELIST_FILENAME << std::endl;
+      std::clog << TAB << "EXP_CLUST_NB_INTEGRATION_MC_STEPS      " << EXP_CLUST_NB_INTEGRATION_MC_STEPS << std::endl;
+      std::clog << TAB << "EXP_DIST_NB_INTEGRATION_STEPS          " << EXP_DIST_NB_INTEGRATION_STEPS << std::endl;
+      std::clog << TAB << "KAPPA_MAX_NB_ITER_CONV                 " << KAPPA_MAX_NB_ITER_CONV << std::endl;
+      std::clog << TAB << "KAPPA_POST_INFERENCE_MODE              " << (KAPPA_POST_INFERENCE_MODE ? "true" : "false")
+                << std::endl;
+
+      std::clog << TAB << "MAXIMIZATION_MODE                      " << (MAXIMIZATION_MODE ? "true" : "false")
+                << std::endl;
+
+      std::clog << TAB << "MIN_NB_ANGLES_TO_TRY                   " << MIN_NB_ANGLES_TO_TRY << std::endl;
+      std::clog << TAB << "NUMERICAL_CONVERGENCE_THRESHOLD_1      " << NUMERICAL_CONVERGENCE_THRESHOLD_1 << std::endl;
+      std::clog << TAB << "NUMERICAL_CONVERGENCE_THRESHOLD_2      " << NUMERICAL_CONVERGENCE_THRESHOLD_2 << std::endl;
+      std::clog << TAB << "NUMERICAL_CONVERGENCE_THRESHOLD_3      " << NUMERICAL_CONVERGENCE_THRESHOLD_3 << std::endl;
+      std::clog << TAB << "NUMERICAL_ZERO                         " << NUMERICAL_ZERO << std::endl;
+      std::clog << TAB << "QUIET_MODE                             " << (QUIET_MODE ? "true" : "false") << std::endl;
+      std::clog << TAB << "REFINE_MODE                            " << (REFINE_MODE ? "true" : "false") << std::endl;
+
+      std::clog << TAB << "ROOTNAME_OUTPUT:                       " << ROOTNAME_OUTPUT << std::endl;
+      std::clog << TAB << "SEED                                   " << SEED << std::endl;
+      std::clog << TAB << "VALIDATION_MODE                        " << (VALIDATION_MODE ? "true" : "false")
+                << std::endl;
+      std::clog << TAB << "VERBOSE_MODE                           " << (VERBOSE_MODE ? "true" : "false") << std::endl;
+      std::clog << TAB << "VERSION                                " << VERSION << std::endl;
+      std::clog << std::endl;
+      std::clog << "Ended on: " << format_time(time_ended) << std::endl;
+      std::clog << "Elapsed CPU time (embedding):            " << std::setw(10) << std::fixed << time5 - time0
+                << " seconds" << std::endl;
+      std::clog << TAB << "initialization:                      " << std::setw(10) << std::fixed << time1 - time0
+                << " seconds" << std::endl;
+
+      if (!REFINE_MODE) {
+          std::clog << TAB << "parameters inference:                " << std::setw(10) << std::fixed << time2 - time1 << " seconds" << std::endl;
+          std::clog << TAB << "initial positions:                   " << std::setw(10) << std::fixed << time3 - time2 << " seconds" << std::endl;
+      }
+
+      if (REFINE_MODE)
+          std::clog << TAB << "loading previous positions:          " << std::setw(10) << std::fixed << time3 - time1 << " seconds" << std::endl;
+
+      if (MAXIMIZATION_MODE)
+          std::clog << TAB << "refining positions:                  " << std::setw(10) << std::fixed << time4 - time3 << " seconds" << std::endl;
+
+      std::clog << TAB << "adjusting kappas:                    " << std::setw(10) << std::fixed << time5 - time4 << " seconds" << std::endl;
+
+      if (VALIDATION_MODE || CHARACTERIZATION_MODE)
+          std::clog << "Elapsed CPU time (validation):           " << std::setw(10) << std::fixed << time7 - time5 << " seconds" << std::endl;
+
+      if (VALIDATION_MODE)
+          std::clog << TAB << "validating embedding:                " << std::setw(10) << std::fixed << time6 - time5 << " seconds" << std::endl;
+
+      if (CHARACTERIZATION_MODE)
+          std::clog << TAB << "characterizing ensemble:             " << std::setw(10) << std::fixed << time7 - time6 << " seconds" << std::endl;
+
+      std::clog << "===========================================================================================" << std::endl;
+
+      if (!VERBOSE_MODE) {
+          logfile.close();
+
+          std::clog.rdbuf(old_rdbuf);
+      }
+  }
+
+  if(TIMING_JSON_MODE) {
+      std::cout << std::fixed << std::setprecision(6);
+      std::cout << "{"
+                << "\"mode\":\"" << (OPTIMIZED_PERF_MODE ? "optimized" : "baseline") << "\","
+                << "\"dimension\":" << DIMENSION << ","
+                << "\"seed\":" << SEED << ","
+                << "\"nb_vertices\":" << nb_vertices << ","
+                << "\"nb_edges\":" << nb_edges << ","
+                << "\"total_time_ms\":" << stage_timing_summary.total_time_ms << ","
+                << "\"initialization_ms\":" << stage_timing_summary.initialization_ms << ","
+                << "\"parameter_inference_ms\":" << stage_timing_summary.parameter_inference_ms << ","
+                << "\"initial_positions_ms\":" << stage_timing_summary.initial_positions_ms << ","
+                << "\"refining_positions_ms\":" << stage_timing_summary.refining_positions_ms << ","
+                << "\"adjusting_kappas_ms\":" << stage_timing_summary.adjusting_kappas_ms << ","
+                << "\"io_ms\":" << stage_timing_summary.io_ms
+                << "}" << std::endl;
+  }
 }
 
 #endif

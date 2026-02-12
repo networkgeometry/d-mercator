@@ -54,13 +54,13 @@ add_executable(embed_sd
   ${include_files}
   include/dmercator/io/coordinates_csv.hpp
   include/dmercator/embedding/embedder.hpp
-  include/dmercator/embedding/engine.hpp
-  include/dmercator/embedding/orchestrator.hpp
-  include/dmercator/init/initialization.hpp
-  include/dmercator/inference/inference.hpp
-  include/dmercator/refine/refinement.hpp
-  include/dmercator/io/embedding_io.hpp
-  include/dmercator/core/helpers.hpp
+  include/dmercator/engine.hpp
+  include/dmercator/initialize.hpp
+  include/dmercator/infer_parameters.hpp
+  include/dmercator/infer_initial_positions.hpp
+  include/dmercator/refine_positions.hpp
+  include/dmercator/validation.hpp
+  include/dmercator/utils.hpp
 )
 add_executable(generate_sd
   apps/generate_sd.cpp

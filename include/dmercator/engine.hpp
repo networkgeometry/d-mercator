@@ -1,6 +1,6 @@
 
-#ifndef DMERCATOR_EMBEDDING_ENGINE_HPP
-#define DMERCATOR_EMBEDDING_ENGINE_HPP
+#ifndef DMERCATOR_ENGINE_HPP
+#define DMERCATOR_ENGINE_HPP
 
 #include <algorithm>
 #include <cmath>
@@ -344,11 +344,125 @@ class embeddingSD_t
     void embed(std::string edgelist_filename) { EDGELIST_FILENAME = edgelist_filename; embed(); };
 };
 
-#include "dmercator/core/helpers.hpp"
-#include "dmercator/embedding/orchestrator.hpp"
-#include "dmercator/inference/inference.hpp"
-#include "dmercator/init/initialization.hpp"
-#include "dmercator/io/embedding_io.hpp"
-#include "dmercator/refine/refinement.hpp"
+#include "dmercator/utils.hpp"
+#include "dmercator/initialize.hpp"
+#include "dmercator/infer_parameters.hpp"
+#include "dmercator/infer_initial_positions.hpp"
+#include "dmercator/refine_positions.hpp"
+#include "dmercator/validation.hpp"
 
+void embeddingSD_t::embed()
+{
+  embed(DIMENSION);
+}
+
+void embeddingSD_t::embed(int dim)
+{
+  if(dim < 1)
+  {
+    std::cerr << "ERROR: embedding dimension must be >= 1." << std::endl;
+    std::terminate();
+  }
+
+  const bool is_s1 = (dim == 1);
+
+  stage_timing_summary = {};
+  {
+    dmercator::core::timing::ScopedTimer total_timer(stage_timing_summary.total_time_ms);
+
+    // Keep execution order aligned with legacy to preserve RNG and numeric behavior.
+    time0 = time_since_epoch_in_seconds();
+    time_started = std::time(nullptr);
+
+    {
+      dmercator::core::timing::ScopedTimer timer(stage_timing_summary.initialization_ms);
+      initialize();
+    }
+
+    time1 = time_since_epoch_in_seconds();
+    if(ONLY_KAPPAS)
+    {
+      if(REFINE_MODE)
+      {
+        const auto custom_beta = beta;
+        load_already_inferred_parameters(dim);
+        beta = custom_beta;
+        mu = is_s1 ? calculateMu() : calculate_mu(dim);
+        {
+          dmercator::core::timing::ScopedTimer timer(stage_timing_summary.adjusting_kappas_ms);
+          infer_kappas_given_beta_for_all_vertices(dim);
+        }
+      } else {
+        {
+          dmercator::core::timing::ScopedTimer timer(stage_timing_summary.parameter_inference_ms);
+          infer_parameters(dim);
+        }
+        if(!is_s1)
+        {
+          dmercator::core::timing::ScopedTimer timer(stage_timing_summary.adjusting_kappas_ms);
+          infer_kappas_given_beta_for_all_vertices(dim);
+        }
+      }
+      save_kappas_and_exit();
+    }
+
+    if(REFINE_MODE)
+    {
+      load_already_inferred_parameters(dim);
+    }
+    if(!REFINE_MODE)
+    {
+      dmercator::core::timing::ScopedTimer timer(stage_timing_summary.parameter_inference_ms);
+      infer_parameters(dim);
+    }
+
+    time2 = time_since_epoch_in_seconds();
+    if(!REFINE_MODE)
+    {
+      dmercator::core::timing::ScopedTimer timer(stage_timing_summary.initial_positions_ms);
+      infer_initial_positions(dim);
+    }
+    time3 = time_since_epoch_in_seconds();
+
+    if(MAXIMIZATION_MODE)
+    {
+      dmercator::core::timing::ScopedTimer timer(stage_timing_summary.refining_positions_ms);
+      refine_positions(dim);
+    }
+    time4 = time_since_epoch_in_seconds();
+    if(KAPPA_POST_INFERENCE_MODE)
+    {
+      dmercator::core::timing::ScopedTimer timer(stage_timing_summary.adjusting_kappas_ms);
+      infer_kappas_given_beta_for_all_vertices(dim);
+    }
+    time5 = time_since_epoch_in_seconds();
+
+    if(is_s1)
+    {
+      time_ended = std::time(nullptr);
+    }
+
+    {
+      dmercator::core::timing::ScopedTimer timer(stage_timing_summary.io_ms);
+      save_inferred_coordinates(dim);
+
+      if(VALIDATION_MODE)
+      {
+        save_inferred_connection_probability(dim);
+        if(is_s1)
+        {
+          save_inferred_theta_density();
+        }
+      }
+      time6 = time_since_epoch_in_seconds();
+      if(CHARACTERIZATION_MODE)
+      {
+        save_inferred_ensemble_characterization(dim, false);
+      }
+      time7 = time_since_epoch_in_seconds();
+    }
+    time_ended = std::time(nullptr);
+  }
+  finalize();
+}
 #endif
