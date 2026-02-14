@@ -63,7 +63,7 @@ The following options are available:
     -e             Only infer kappas for a given input network. Then exit and save these 
                    hidden degrees to file.
     -M [MODE]      Performance mode: baseline or optimized. Default: optimized.
-    -G, --gpu      Enable CUDA acceleration for supported hotspots (if built with USE_CUDA=ON).
+    -G, --gpu      Enable CUDA acceleration for supported hotspots (if built with D_MERCATOR_CUDA=ON).
     -C, --cpu      Force CPU-only execution (disables CUDA path even if available).
     -D             Enable deterministic CUDA mode (default).
     -N             Disable deterministic CUDA mode.

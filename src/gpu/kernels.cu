@@ -234,4 +234,54 @@ __global__ void inferred_expected_degrees_sd_kernel(const double *positions,
   out_expected_degrees[v1] = expected_degree;
 }
 
+__global__ void edge_probabilities_s1_kernel(const double *theta,
+                                             const double *pair_prefactor,
+                                             int nb_vertices,
+                                             int v1,
+                                             double beta,
+                                             double *out_probabilities)
+{
+  const int v2 = blockIdx.x * blockDim.x + threadIdx.x;
+  if(v2 >= nb_vertices)
+  {
+    return;
+  }
+  if(v2 == v1)
+  {
+    out_probabilities[v2] = 0.0;
+    return;
+  }
+
+  const double dtheta = angular_distance_s1(theta[v1], theta[v2]);
+  const double chi = pair_prefactor[v2] * dtheta;
+  out_probabilities[v2] = 1.0 / (1.0 + pow(chi, beta));
+}
+
+__global__ void edge_probabilities_sd_kernel(const double *positions,
+                                             int position_stride,
+                                             const double *pair_prefactor,
+                                             int nb_vertices,
+                                             int v1,
+                                             double beta,
+                                             double numerical_zero,
+                                             double *out_probabilities)
+{
+  const int v2 = blockIdx.x * blockDim.x + threadIdx.x;
+  if(v2 >= nb_vertices)
+  {
+    return;
+  }
+  if(v2 == v1)
+  {
+    out_probabilities[v2] = 0.0;
+    return;
+  }
+
+  const double *pos1 = positions + static_cast<size_t>(v1) * position_stride;
+  const double *pos2 = positions + static_cast<size_t>(v2) * position_stride;
+  const double dtheta = angular_distance_sd(pos1, pos2, position_stride, numerical_zero);
+  const double chi = pair_prefactor[v2] * dtheta;
+  out_probabilities[v2] = 1.0 / (1.0 + pow(chi, beta));
+}
+
 } // namespace dmercator::gpu::kernels

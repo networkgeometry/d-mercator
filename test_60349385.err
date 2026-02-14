@@ -1,0 +1,155 @@
++ module load gcc/12.2.0-fasrc01
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_sh_dbg=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output
+Shell debugging restarted
++ unset __lmod_sh_dbg
++ return 0
++ module load cmake
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_sh_dbg=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output
+Shell debugging restarted
++ unset __lmod_sh_dbg
++ return 0
++ module load cuda/12.9.1-fasrc01
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_sh_dbg=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output
+Shell debugging restarted
++ unset __lmod_sh_dbg
++ return 0
++ module load python/3.10.12-fasrc01
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_sh_dbg=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output
+Shell debugging restarted
++ unset __lmod_sh_dbg
++ return 0
++ source activate pt2.3.0_cuda12.1
+++ _CONDA_ROOT=/n/sw/Mambaforge-23.3.1-1
+++ . /n/sw/Mambaforge-23.3.1-1/etc/profile.d/conda.sh
++++ export CONDA_EXE=/n/sw/Mambaforge-23.3.1-1/bin/conda
++++ CONDA_EXE=/n/sw/Mambaforge-23.3.1-1/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/n/sw/Mambaforge-23.3.1-1/bin/python
++++ CONDA_PYTHON_EXE=/n/sw/Mambaforge-23.3.1-1/bin/python
++++ '[' -z x ']'
+++ conda activate pt2.3.0_cuda12.1
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate pt2.3.0_cuda12.1
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate pt2.3.0_cuda12.1
++++ /n/sw/Mambaforge-23.3.1-1/bin/conda shell.posix activate pt2.3.0_cuda12.1
+++ ask_conda='PS1='\''(pt2.3.0_cuda12.1) '\''
+export PATH='\''/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/bin:/n/sw/Mambaforge-23.3.1-1/condabin:/n/sw/Mambaforge-23.3.1-1/bin:/n/sw/helmod-rocky8/apps/Core/cuda/12.9.1-fasrc01/cuda/bin:/n/sw/helmod-rocky8/apps/Core/cmake/4.1.1-fasrc01/bin:/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/bin:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/n/home10/rjankowski/.vscode-server/cli/servers/Stable-591199df409fbf59b4b52d5ad4ee0470152a9b31/server/bin/remote-cli:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/mellanox/doca/tools:/opt/puppetlabs/bin'\''
+export CONDA_PREFIX='\''/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''pt2.3.0_cuda12.1'\''
+export CONDA_PROMPT_MODIFIER='\''(pt2.3.0_cuda12.1) '\''
+export CONDA_EXE='\''/n/sw/Mambaforge-23.3.1-1/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/n/sw/Mambaforge-23.3.1-1/bin/python'\''
+. "/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/conda/activate.d/libglib_activate.sh"
+. "/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/conda/activate.d/libxml2_activate.sh"'
+++ eval 'PS1='\''(pt2.3.0_cuda12.1) '\''
+export PATH='\''/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/bin:/n/sw/Mambaforge-23.3.1-1/condabin:/n/sw/Mambaforge-23.3.1-1/bin:/n/sw/helmod-rocky8/apps/Core/cuda/12.9.1-fasrc01/cuda/bin:/n/sw/helmod-rocky8/apps/Core/cmake/4.1.1-fasrc01/bin:/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/bin:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/n/home10/rjankowski/.vscode-server/cli/servers/Stable-591199df409fbf59b4b52d5ad4ee0470152a9b31/server/bin/remote-cli:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/mellanox/doca/tools:/opt/puppetlabs/bin'\''
+export CONDA_PREFIX='\''/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''pt2.3.0_cuda12.1'\''
+export CONDA_PROMPT_MODIFIER='\''(pt2.3.0_cuda12.1) '\''
+export CONDA_EXE='\''/n/sw/Mambaforge-23.3.1-1/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/n/sw/Mambaforge-23.3.1-1/bin/python'\''
+. "/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/conda/activate.d/libglib_activate.sh"
+. "/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/conda/activate.d/libxml2_activate.sh"'
++++ PS1='(pt2.3.0_cuda12.1) '
++++ export PATH=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/bin:/n/sw/Mambaforge-23.3.1-1/condabin:/n/sw/Mambaforge-23.3.1-1/bin:/n/sw/helmod-rocky8/apps/Core/cuda/12.9.1-fasrc01/cuda/bin:/n/sw/helmod-rocky8/apps/Core/cmake/4.1.1-fasrc01/bin:/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/bin:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/n/home10/rjankowski/.vscode-server/cli/servers/Stable-591199df409fbf59b4b52d5ad4ee0470152a9b31/server/bin/remote-cli:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/mellanox/doca/tools:/opt/puppetlabs/bin
++++ PATH=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/bin:/n/sw/Mambaforge-23.3.1-1/condabin:/n/sw/Mambaforge-23.3.1-1/bin:/n/sw/helmod-rocky8/apps/Core/cuda/12.9.1-fasrc01/cuda/bin:/n/sw/helmod-rocky8/apps/Core/cmake/4.1.1-fasrc01/bin:/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/bin:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/n/home10/rjankowski/.vscode-server/cli/servers/Stable-591199df409fbf59b4b52d5ad4ee0470152a9b31/server/bin/remote-cli:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/mellanox/doca/tools:/opt/puppetlabs/bin
++++ export CONDA_PREFIX=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1
++++ CONDA_PREFIX=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=pt2.3.0_cuda12.1
++++ CONDA_DEFAULT_ENV=pt2.3.0_cuda12.1
++++ export 'CONDA_PROMPT_MODIFIER=(pt2.3.0_cuda12.1) '
++++ CONDA_PROMPT_MODIFIER='(pt2.3.0_cuda12.1) '
++++ export CONDA_EXE=/n/sw/Mambaforge-23.3.1-1/bin/conda
++++ CONDA_EXE=/n/sw/Mambaforge-23.3.1-1/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/n/sw/Mambaforge-23.3.1-1/bin/python
++++ CONDA_PYTHON_EXE=/n/sw/Mambaforge-23.3.1-1/bin/python
++++ . /n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/conda/activate.d/libglib_activate.sh
+++++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
+++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
+++++ export GSETTINGS_SCHEMA_DIR=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/share/glib-2.0/schemas
+++++ GSETTINGS_SCHEMA_DIR=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/share/glib-2.0/schemas
++++ . /n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/conda/activate.d/libxml2_activate.sh
+++++ test -n ''
+++++ xml_catalog_files_libxml2=
+++++ XML_CATALOG_FILES=
+++++ conda_catalog_files=
+++++ ifs_libxml2=' 	
+'
+++++ IFS=' '
+++++ rem=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1
+++++ for pre in ${rem}
+++++ test '' = /n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1
+++++ conda_catalog_files=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1
+++++ rem=
+++++ IFS=' 	
+'
+++++ conda_catalog_files='file:///n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/xml/catalog file:///etc/xml/catalog'
+++++ export 'XML_CATALOG_FILES=file:///n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/xml/catalog file:///etc/xml/catalog'
+++++ XML_CATALOG_FILES='file:///n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/xml/catalog file:///etc/xml/catalog'
+++++ unset conda_catalog_files ifs_libxml2 rem
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ nvidia-smi
++ REPO_ROOT=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator
++ THREADS=8
++ CPU_BUILD_DIR=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cpu
++ CUDA_BUILD_DIR=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda
++ RESULTS_DIR=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60349385
++ SIZES=1000,2000,5000,10000,20000,50000
++ DIMENSION=1
++ REPS=1
++ SEED=12345
++ BETA=2
++ export OMP_NUM_THREADS=1
++ OMP_NUM_THREADS=1
++ cmake -S /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator -B /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cpu -DCMAKE_BUILD_TYPE=Release -DDMERCATOR_RELEASE_O3=ON -DUSE_CUDA=OFF
++ cmake --build /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cpu -j 8
++ cmake -S /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator -B /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda -DCMAKE_BUILD_TYPE=Release -DDMERCATOR_RELEASE_O3=ON -DUSE_CUDA=ON
++ cmake --build /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda -j 8
++ mkdir -p /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60349385
++ python3 /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/python/benchmark_cpu_gpu.py --cpu-build-dir /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cpu --gpu-build-dir /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda --out-dir /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60349385 --sizes 1000,2000,5000,10000,20000,50000 --dimension 1 --reps 1 --seed 12345 --beta 2 --omp-threads 1
+Convergence reached after 12 iterations.
+Machine-readable ground truth saved to /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60349385/artifacts/d1_n1000_seed1013345/synthetic_sd.truth.csv
+Convergence reached after 16 iterations.
+Machine-readable ground truth saved to /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60349385/artifacts/d1_n2000_seed1014345/synthetic_sd.truth.csv

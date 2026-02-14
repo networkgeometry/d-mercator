@@ -226,21 +226,20 @@ int embeddingSD_t::refine_angle(int v1)
   candidate_scores.assign(candidate_angles.size(), 0.0);
 #if defined(DMERCATOR_USE_CUDA)
   bool scored_on_gpu = false;
-  if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE)
+  if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE && likelihood_backend)
   {
-    scored_on_gpu = dmercator::gpu::evaluate_refine_s1_candidates_from_kappa(v1,
-                                                                              beta,
-                                                                              prefactor_over_kappa_v1,
-                                                                              neighbors,
-                                                                              candidate_angles,
-                                                                              candidate_scores);
+    scored_on_gpu = likelihood_backend->score_candidates_s1(v1,
+                                                            prefactor,
+                                                            beta,
+                                                            candidate_angles,
+                                                            candidate_scores);
     if(!scored_on_gpu)
     {
       CUDA_REFINEMENT_ACTIVE = false;
       if(!QUIET_MODE)
       {
         std::clog << TAB << "WARNING: CUDA S1 refinement scoring failed; falling back to CPU for remaining vertices. "
-                  << dmercator::gpu::last_error() << std::endl;
+                  << likelihood_backend->last_error() << std::endl;
       }
     }
   }
@@ -267,15 +266,15 @@ int embeddingSD_t::refine_angle(int v1)
 
   theta[v1] = best_angle;
 #if defined(DMERCATOR_USE_CUDA)
-  if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE)
+  if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE && likelihood_backend)
   {
-    if(!dmercator::gpu::update_refine_theta(v1, best_angle))
+    if(!likelihood_backend->set_theta_single(v1, best_angle))
     {
       CUDA_REFINEMENT_ACTIVE = false;
       if(!QUIET_MODE)
       {
         std::clog << TAB << "WARNING: CUDA S1 refinement state update failed; falling back to CPU for remaining vertices. "
-                  << dmercator::gpu::last_error() << std::endl;
+                  << likelihood_backend->last_error() << std::endl;
       }
     }
   }
@@ -498,24 +497,34 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
   candidate_scores.assign(nb_candidates, 0.0);
 #if defined(DMERCATOR_USE_CUDA)
   bool scored_on_gpu = false;
-  if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE)
+  if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE && likelihood_backend)
   {
-    scored_on_gpu = dmercator::gpu::evaluate_refine_sd_candidates_from_kappa(dim,
-                                                                              v1,
-                                                                              beta,
-                                                                              NUMERICAL_ZERO,
-                                                                              mu,
-                                                                              radius,
-                                                                              neighbors,
-                                                                              candidate_positions_flat,
-                                                                              candidate_scores);
+    auto &candidate_positions_soa = scratch_candidate_positions_soa;
+    candidate_positions_soa.assign(candidate_positions_flat.size(), 0.0);
+    for(size_t candidate_idx = 0; candidate_idx < nb_candidates; ++candidate_idx)
+    {
+      const size_t in_offset = candidate_idx * static_cast<size_t>(position_stride);
+      for(int axis = 0; axis < position_stride; ++axis)
+      {
+        candidate_positions_soa[static_cast<size_t>(axis) * nb_candidates + candidate_idx] =
+          candidate_positions_flat[in_offset + static_cast<size_t>(axis)];
+      }
+    }
+    scored_on_gpu = likelihood_backend->score_candidates_sd(dim,
+                                                            v1,
+                                                            radius,
+                                                            mu,
+                                                            beta,
+                                                            NUMERICAL_ZERO,
+                                                            candidate_positions_soa,
+                                                            candidate_scores);
     if(!scored_on_gpu)
     {
       CUDA_REFINEMENT_ACTIVE = false;
       if(!QUIET_MODE)
       {
         std::clog << TAB << "WARNING: CUDA S^D refinement scoring failed; falling back to CPU for remaining vertices. "
-                  << dmercator::gpu::last_error() << std::endl;
+                  << likelihood_backend->last_error() << std::endl;
       }
     }
   }
@@ -546,15 +555,15 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
 
   d_positions[v1] = best_position;
 #if defined(DMERCATOR_USE_CUDA)
-  if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE)
+  if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE && likelihood_backend)
   {
-    if(!dmercator::gpu::update_refine_position(dim, v1, best_position))
+    if(!likelihood_backend->set_position_single(v1, best_position))
     {
       CUDA_REFINEMENT_ACTIVE = false;
       if(!QUIET_MODE)
       {
         std::clog << TAB << "WARNING: CUDA S^D refinement state update failed; falling back to CPU for remaining vertices. "
-                  << dmercator::gpu::last_error() << std::endl;
+                  << likelihood_backend->last_error() << std::endl;
       }
     }
   }
@@ -572,19 +581,21 @@ void embeddingSD_t::refine_positions(int dim)
   if(dim == 1)
   {
 #if defined(DMERCATOR_USE_CUDA)
-    if(OPTIMIZED_PERF_MODE && CUDA_MODE)
+  if(OPTIMIZED_PERF_MODE && CUDA_MODE)
+  {
+    CUDA_REFINEMENT_ACTIVE = (likelihood_backend != nullptr) &&
+                             likelihood_backend->set_kappa(kappa) &&
+                             likelihood_backend->set_theta(theta);
+    if(!CUDA_REFINEMENT_ACTIVE)
     {
-      CUDA_REFINEMENT_ACTIVE = dmercator::gpu::begin_refine_s1(theta, kappa);
-      if(!CUDA_REFINEMENT_ACTIVE)
+      CUDA_MODE = false;
+      if(!QUIET_MODE)
       {
-        CUDA_MODE = false;
-        if(!QUIET_MODE)
-        {
-          std::clog << TAB << "WARNING: CUDA S1 refinement initialization failed; continuing on CPU. "
-                    << dmercator::gpu::last_error() << std::endl;
-        }
+        std::clog << TAB << "WARNING: CUDA S1 refinement initialization failed; continuing on CPU. "
+                  << (likelihood_backend ? likelihood_backend->last_error() : std::string("backend not available")) << std::endl;
       }
     }
+  }
 #endif
 
     double start_time, stop_time;
@@ -622,14 +633,27 @@ void embeddingSD_t::refine_positions(int dim)
 #if defined(DMERCATOR_USE_CUDA)
   if(OPTIMIZED_PERF_MODE && CUDA_MODE)
   {
-    CUDA_REFINEMENT_ACTIVE = dmercator::gpu::begin_refine_sd(dim, d_positions, kappa);
+    auto &positions_soa = scratch_positions_soa;
+    const int position_stride = dim + 1;
+    positions_soa.assign(static_cast<size_t>(position_stride) * static_cast<size_t>(nb_vertices), 0.0);
+    for(int v = 0; v < nb_vertices; ++v)
+    {
+      for(int axis = 0; axis < position_stride; ++axis)
+      {
+        positions_soa[static_cast<size_t>(axis) * static_cast<size_t>(nb_vertices) + static_cast<size_t>(v)] =
+          d_positions[static_cast<size_t>(v)][static_cast<size_t>(axis)];
+      }
+    }
+    CUDA_REFINEMENT_ACTIVE = (likelihood_backend != nullptr) &&
+                             likelihood_backend->set_kappa(kappa) &&
+                             likelihood_backend->set_positions_soa(position_stride, positions_soa);
     if(!CUDA_REFINEMENT_ACTIVE)
     {
       CUDA_MODE = false;
       if(!QUIET_MODE)
       {
         std::clog << TAB << "WARNING: CUDA S^D refinement initialization failed; continuing on CPU. "
-                  << dmercator::gpu::last_error() << std::endl;
+                  << (likelihood_backend ? likelihood_backend->last_error() : std::string("backend not available")) << std::endl;
       }
     }
   }

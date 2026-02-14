@@ -56,6 +56,19 @@ bool evaluate_refine_sd_candidates_from_kappa(int dim,
                                               const std::vector<double> &candidate_positions_flat,
                                               std::vector<double> &out_scores);
 
+bool evaluate_generation_s1_probabilities_from_kappa(int v1,
+                                                     double beta,
+                                                     double mu,
+                                                     std::vector<double> &out_probabilities);
+
+bool evaluate_generation_sd_probabilities_from_kappa(int dim,
+                                                     int v1,
+                                                     double beta,
+                                                     double numerical_zero,
+                                                     double mu,
+                                                     double radius,
+                                                     std::vector<double> &out_probabilities);
+
 bool prepare_inferred_expected_degrees_s1(const std::vector<double> &theta);
 bool prepare_inferred_expected_degrees_sd(int dim, const std::vector<std::vector<double>> &positions);
 void clear_inferred_expected_degrees_state();

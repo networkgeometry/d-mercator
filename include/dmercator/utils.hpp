@@ -179,4 +179,27 @@ void embeddingSD_t::rebuild_adjacency_flat_list()
   }
 }
 
+void embeddingSD_t::rebuild_adjacency_csr()
+{
+  adjacency_row_offsets.clear();
+  adjacency_col_indices.clear();
+
+  adjacency_row_offsets.resize(static_cast<std::size_t>(nb_vertices) + 1, 0);
+  for(int v = 0; v < nb_vertices; ++v)
+  {
+    adjacency_row_offsets[static_cast<std::size_t>(v + 1)] =
+      adjacency_row_offsets[static_cast<std::size_t>(v)] + static_cast<int>(adjacency_flat_list[static_cast<std::size_t>(v)].size());
+  }
+
+  adjacency_col_indices.resize(static_cast<std::size_t>(adjacency_row_offsets.back()), 0);
+  for(int v = 0; v < nb_vertices; ++v)
+  {
+    const auto &neighbors = adjacency_flat_list[static_cast<std::size_t>(v)];
+    const int offset = adjacency_row_offsets[static_cast<std::size_t>(v)];
+    std::copy(neighbors.begin(),
+              neighbors.end(),
+              adjacency_col_indices.begin() + static_cast<std::ptrdiff_t>(offset));
+  }
+}
+
 #endif

@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <random>
 #include <set>
 #include <sstream>
@@ -28,9 +29,7 @@
 #include "integrate_expected_degree.hpp"
 #include "readjust_positions.hpp"
 #include "dmercator/core/timing.hpp"
-#if defined(DMERCATOR_USE_CUDA)
-#include "dmercator/gpu/gpu_context.hpp"
-#endif
+#include "dmercator/gpu/likelihood_backend.hpp"
 
 class embeddingSD_t
 {
@@ -163,6 +162,8 @@ class embeddingSD_t
     // Contiguous adjacency cache (sorted, copied from adjacency_list) for
     // inner-loop iteration and membership scans.
     std::vector<std::vector<int>> adjacency_flat_list;
+    std::vector<int> adjacency_row_offsets;
+    std::vector<int> adjacency_col_indices;
 
     std::vector<int> degree;
 
@@ -323,6 +324,7 @@ class embeddingSD_t
     void save_kappas_and_exit();
 
     void rebuild_adjacency_flat_list();
+    void rebuild_adjacency_csr();
 
   private:
 
@@ -334,9 +336,12 @@ class embeddingSD_t
     std::vector<double> scratch_candidate_angles;
     std::vector<double> scratch_candidate_scores;
     std::vector<double> scratch_candidate_positions_flat;
+    std::vector<double> scratch_candidate_positions_soa;
+    std::vector<double> scratch_positions_soa;
 
     bool CUDA_RUNTIME_AVAILABLE = false;
     bool CUDA_REFINEMENT_ACTIVE = false;
+    std::unique_ptr<dmercator::gpu::LikelihoodBackend> likelihood_backend;
 
   public:
 

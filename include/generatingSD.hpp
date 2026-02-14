@@ -42,6 +42,9 @@
 #include <string>
 #include <vector>
 
+#if defined(DMERCATOR_USE_CUDA)
+#include "dmercator/gpu/gpu_context.hpp"
+#endif
 
 
 class generatingSD_t
@@ -67,6 +70,14 @@ class generatingSD_t
     std::string HIDDEN_VARIABLES_FILENAME;
     // Dimension of the model S^D
     int DIMENSION = 1;
+    // Optional CUDA acceleration for generation and expected-degree updates.
+#if defined(DMERCATOR_USE_CUDA)
+    bool CUDA_MODE = true;
+#else
+    bool CUDA_MODE = false;
+#endif
+    bool CUDA_DETERMINISTIC_MODE = true;
+    bool CUDA_RUNTIME_AVAILABLE = false;
   // General internal objects.
   private:
     // pi
@@ -208,14 +219,64 @@ void generatingSD_t::generate_edgelist(int width)
   // Generates the edgelist.
   double kappa1, theta1, dtheta, prob;
   double prefactor = nb_vertices / (2 * PI * MU);
+  bool gpu_generation_active = false;
+  std::vector<double> gpu_probabilities;
+#if defined(DMERCATOR_USE_CUDA)
+  CUDA_RUNTIME_AVAILABLE = false;
+  if(CUDA_MODE)
+  {
+    const auto cuda_status = dmercator::gpu::initialize(CUDA_DETERMINISTIC_MODE);
+    CUDA_RUNTIME_AVAILABLE = cuda_status.available;
+    if(cuda_status.available)
+    {
+      gpu_generation_active = dmercator::gpu::begin_refine_s1(theta, kappa);
+      if(!gpu_generation_active)
+      {
+        std::clog << "WARNING: CUDA S1 generation initialization failed; falling back to CPU. "
+                  << dmercator::gpu::last_error() << std::endl;
+      }
+    }
+    else
+    {
+      std::clog << "WARNING: CUDA requested for S1 generation but unavailable; falling back to CPU. "
+                << cuda_status.message << std::endl;
+    }
+  }
+  if(gpu_generation_active)
+  {
+    gpu_probabilities.resize(nb_vertices, 0.0);
+  }
+#endif
   for(int v1(0); v1<nb_vertices; ++v1)
   {
+#if defined(DMERCATOR_USE_CUDA)
+    bool row_from_gpu = false;
+    if(gpu_generation_active)
+    {
+      row_from_gpu = dmercator::gpu::evaluate_generation_s1_probabilities_from_kappa(v1, BETA, MU, gpu_probabilities);
+      if(!row_from_gpu)
+      {
+        std::clog << "WARNING: CUDA S1 generation probability row failed; falling back to CPU. "
+                  << dmercator::gpu::last_error() << std::endl;
+        gpu_generation_active = false;
+      }
+    }
+#else
+    const bool row_from_gpu = false;
+#endif
     kappa1 = kappa[v1];
     theta1 = theta[v1];
     for(int v2(v1 + 1); v2<nb_vertices; ++v2)
     {
-      dtheta = PI - std::fabs(PI - std::fabs(theta1 - theta[v2]));
-      prob = 1 / (1 + std::pow((prefactor * dtheta) / (kappa1 * kappa[v2]), BETA));
+      if(row_from_gpu)
+      {
+        prob = gpu_probabilities[v2];
+      }
+      else
+      {
+        dtheta = PI - std::fabs(PI - std::fabs(theta1 - theta[v2]));
+        prob = 1 / (1 + std::pow((prefactor * dtheta) / (kappa1 * kappa[v2]), BETA));
+      }
       if(uniform_01(engine) < prob)
       {
         edgelist_file << std::setw(width) << Num2Name[v1] << " ";
@@ -334,11 +395,68 @@ void generatingSD_t::generate_edgelist_dim(int width)
   edgelist_file << std::setw(width)     << "Vertex2" << " ";
   edgelist_file << std::endl;
   // Generates the edgelist.
+  bool gpu_generation_active = false;
+  std::vector<double> gpu_probabilities;
+#if defined(DMERCATOR_USE_CUDA)
+  CUDA_RUNTIME_AVAILABLE = false;
+  if(CUDA_MODE)
+  {
+    const auto cuda_status = dmercator::gpu::initialize(CUDA_DETERMINISTIC_MODE);
+    CUDA_RUNTIME_AVAILABLE = cuda_status.available;
+    if(cuda_status.available)
+    {
+      gpu_generation_active = dmercator::gpu::begin_refine_sd(DIMENSION, d_positions, kappa);
+      if(!gpu_generation_active)
+      {
+        std::clog << "WARNING: CUDA S^D generation initialization failed; falling back to CPU. "
+                  << dmercator::gpu::last_error() << std::endl;
+      }
+    }
+    else
+    {
+      std::clog << "WARNING: CUDA requested for S^D generation but unavailable; falling back to CPU. "
+                << cuda_status.message << std::endl;
+    }
+  }
+  if(gpu_generation_active)
+  {
+    gpu_probabilities.resize(nb_vertices, 0.0);
+  }
+#endif
   for(int v1(0); v1<nb_vertices; ++v1) {
+#if defined(DMERCATOR_USE_CUDA)
+    bool row_from_gpu = false;
+    if(gpu_generation_active)
+    {
+      row_from_gpu = dmercator::gpu::evaluate_generation_sd_probabilities_from_kappa(DIMENSION,
+                                                                                      v1,
+                                                                                      BETA,
+                                                                                      NUMERICAL_ZERO,
+                                                                                      MU,
+                                                                                      radius,
+                                                                                      gpu_probabilities);
+      if(!row_from_gpu)
+      {
+        std::clog << "WARNING: CUDA S^D generation probability row failed; falling back to CPU. "
+                  << dmercator::gpu::last_error() << std::endl;
+        gpu_generation_active = false;
+      }
+    }
+#else
+    const bool row_from_gpu = false;
+#endif
     for(int v2(v1 + 1); v2<nb_vertices; ++v2) {
-      const auto dtheta = compute_angle_d_vectors(d_positions[v1], d_positions[v2]);
-      const auto inside = radius * dtheta / std::pow(MU * kappa[v1] * kappa[v2], 1.0 / DIMENSION);
-      const auto prob = 1 / (1 + std::pow(inside, BETA));
+      double prob = 0.0;
+      if(row_from_gpu)
+      {
+        prob = gpu_probabilities[v2];
+      }
+      else
+      {
+        const auto dtheta = compute_angle_d_vectors(d_positions[v1], d_positions[v2]);
+        const auto inside = radius * dtheta / std::pow(MU * kappa[v1] * kappa[v2], 1.0 / DIMENSION);
+        prob = 1 / (1 + std::pow(inside, BETA));
+      }
       if(uniform_01(engine) < prob)
       {
         edgelist_file << std::setw(width) << Num2Name[v1] << " ";
@@ -795,10 +913,56 @@ void generatingSD_t::infer_kappas_given_beta_for_all_vertices(int dim)
   bool keep_going = true;
   const double radius = compute_radius(dim, nb_vertices);
   const int KAPPA_MAX_NB_ITER_CONV = 500;
+  bool gpu_expected_ready = false;
+  bool gpu_expected_state_active = false;
+#if defined(DMERCATOR_USE_CUDA)
+  if(CUDA_MODE)
+  {
+    const auto cuda_status = dmercator::gpu::initialize(CUDA_DETERMINISTIC_MODE);
+    CUDA_RUNTIME_AVAILABLE = cuda_status.available;
+    if(cuda_status.available)
+    {
+      gpu_expected_ready = dmercator::gpu::prepare_inferred_expected_degrees_sd(dim, d_positions);
+      gpu_expected_state_active = gpu_expected_ready;
+      if(!gpu_expected_ready)
+      {
+        std::clog << "WARNING: CUDA S^D expected-degree preparation failed; falling back to CPU. "
+                  << dmercator::gpu::last_error() << std::endl;
+      }
+    }
+    else
+    {
+      std::clog << "WARNING: CUDA requested for S^D expected-degree updates but unavailable; falling back to CPU. "
+                << cuda_status.message << std::endl;
+    }
+  }
+#endif
   while (keep_going && (cnt < KAPPA_MAX_NB_ITER_CONV))
   {
     // Updates the expected degree of individual vertices.
-    compute_inferred_ensemble_expected_degrees(dim, radius);
+#if defined(DMERCATOR_USE_CUDA)
+    bool computed_on_gpu = false;
+    if(gpu_expected_ready)
+    {
+      computed_on_gpu = dmercator::gpu::compute_inferred_expected_degrees_sd_prepared(dim,
+                                                                                       BETA,
+                                                                                       MU,
+                                                                                       radius,
+                                                                                       NUMERICAL_ZERO,
+                                                                                       kappa,
+                                                                                       inferred_ensemble_expected_degree);
+      if(!computed_on_gpu)
+      {
+        std::clog << "WARNING: CUDA S^D expected-degree computation failed; falling back to CPU. "
+                  << dmercator::gpu::last_error() << std::endl;
+        gpu_expected_ready = false;
+      }
+    }
+    if(!computed_on_gpu)
+#endif
+    {
+      compute_inferred_ensemble_expected_degrees(dim, radius);
+    }
     // Verifies convergence.
     keep_going = false;
     for(int v(0); v<nb_vertices; ++v)
@@ -820,6 +984,12 @@ void generatingSD_t::infer_kappas_given_beta_for_all_vertices(int dim)
     }
     ++cnt;
   }
+#if defined(DMERCATOR_USE_CUDA)
+  if(gpu_expected_state_active)
+  {
+    dmercator::gpu::clear_inferred_expected_degrees_state();
+  }
+#endif
   // Resets the values of kappa since convergence has not been reached.
   if(cnt >= KAPPA_MAX_NB_ITER_CONV)
   {
@@ -837,10 +1007,53 @@ void generatingSD_t::infer_kappas_given_beta_for_all_vertices()
   int cnt = 0;
   bool keep_going = true;
   const int KAPPA_MAX_NB_ITER_CONV = 500;
+  bool gpu_expected_ready = false;
+  bool gpu_expected_state_active = false;
+#if defined(DMERCATOR_USE_CUDA)
+  if(CUDA_MODE)
+  {
+    const auto cuda_status = dmercator::gpu::initialize(CUDA_DETERMINISTIC_MODE);
+    CUDA_RUNTIME_AVAILABLE = cuda_status.available;
+    if(cuda_status.available)
+    {
+      gpu_expected_ready = dmercator::gpu::prepare_inferred_expected_degrees_s1(theta);
+      gpu_expected_state_active = gpu_expected_ready;
+      if(!gpu_expected_ready)
+      {
+        std::clog << "WARNING: CUDA S1 expected-degree preparation failed; falling back to CPU. "
+                  << dmercator::gpu::last_error() << std::endl;
+      }
+    }
+    else
+    {
+      std::clog << "WARNING: CUDA requested for S1 expected-degree updates but unavailable; falling back to CPU. "
+                << cuda_status.message << std::endl;
+    }
+  }
+#endif
   while( keep_going && (cnt < KAPPA_MAX_NB_ITER_CONV) )
   {
     // Updates the expected degree of individual vertices.
-    compute_inferred_ensemble_expected_degrees();
+#if defined(DMERCATOR_USE_CUDA)
+    bool computed_on_gpu = false;
+    if(gpu_expected_ready)
+    {
+      computed_on_gpu = dmercator::gpu::compute_inferred_expected_degrees_s1_prepared(BETA,
+                                                                                       MU,
+                                                                                       kappa,
+                                                                                       inferred_ensemble_expected_degree);
+      if(!computed_on_gpu)
+      {
+        std::clog << "WARNING: CUDA S1 expected-degree computation failed; falling back to CPU. "
+                  << dmercator::gpu::last_error() << std::endl;
+        gpu_expected_ready = false;
+      }
+    }
+    if(!computed_on_gpu)
+#endif
+    {
+      compute_inferred_ensemble_expected_degrees();
+    }
     // Verifies convergence.
     keep_going = false;
     for(int v(0); v<nb_vertices; ++v)
@@ -862,6 +1075,12 @@ void generatingSD_t::infer_kappas_given_beta_for_all_vertices()
     }
     ++cnt;
   }
+#if defined(DMERCATOR_USE_CUDA)
+  if(gpu_expected_state_active)
+  {
+    dmercator::gpu::clear_inferred_expected_degrees_state();
+  }
+#endif
   // Resets the values of kappa since convergence has not been reached.
   if(cnt >= KAPPA_MAX_NB_ITER_CONV)
   {

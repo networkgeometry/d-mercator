@@ -22,6 +22,7 @@ void embeddingSD_t::initialize()
 
   CUDA_REFINEMENT_ACTIVE = false;
   CUDA_RUNTIME_AVAILABLE = false;
+  likelihood_backend.reset();
 
   if(!QUIET_MODE)
   {
@@ -34,33 +35,6 @@ void embeddingSD_t::initialize()
      std::clog.rdbuf(logfile.rdbuf());
     }
   }
-
-#if defined(DMERCATOR_USE_CUDA)
-  if(CUDA_MODE)
-  {
-    const auto cuda_status = dmercator::gpu::initialize(CUDA_DETERMINISTIC_MODE);
-    CUDA_RUNTIME_AVAILABLE = cuda_status.available;
-    if(!cuda_status.available)
-    {
-      CUDA_MODE = false;
-      if(!QUIET_MODE)
-      {
-        std::clog << TAB << "WARNING: CUDA requested but unavailable; falling back to CPU. "
-                  << cuda_status.message << std::endl;
-      }
-    }
-  }
-#else
-  if(CUDA_MODE)
-  {
-    CUDA_MODE = false;
-    if(!QUIET_MODE)
-    {
-      std::clog << TAB << "WARNING: CUDA requested, but this binary was built without `USE_CUDA=ON`. "
-                << "Falling back to CPU." << std::endl;
-    }
-  }
-#endif
 
   if(!QUIET_MODE) { std::clog                                                                                                  << std::endl; }
   if(!QUIET_MODE) { std::clog << "===========================================================================================" << std::endl; }
@@ -78,6 +52,27 @@ void embeddingSD_t::initialize()
   if(!QUIET_MODE) { std::clog << "Loading edgelist..."; }
   load_edgelist();
   if(!QUIET_MODE) { std::clog << "...................................................................done."                    << std::endl; }
+
+  if(CUDA_MODE)
+  {
+    likelihood_backend = dmercator::gpu::create_likelihood_backend();
+    dmercator::gpu::CsrGraph graph;
+    graph.nb_vertices = nb_vertices;
+    graph.row_offsets = adjacency_row_offsets;
+    graph.col_indices = adjacency_col_indices;
+    const auto cuda_status = likelihood_backend->initialize(graph, CUDA_DETERMINISTIC_MODE);
+    CUDA_RUNTIME_AVAILABLE = cuda_status.available;
+    if(!cuda_status.available)
+    {
+      CUDA_MODE = false;
+      likelihood_backend.reset();
+      if(!QUIET_MODE)
+      {
+        std::clog << TAB << "WARNING: CUDA requested but unavailable; falling back to CPU. "
+                  << cuda_status.message << std::endl;
+      }
+    }
+  }
 
   if(!QUIET_MODE) { std::clog                                                                                                  << std::endl; }
   if(!QUIET_MODE) { std::clog << "Checking number of connected components..."; }
@@ -320,6 +315,7 @@ void embeddingSD_t::load_edgelist()
 
   edgelist_file.close();
   rebuild_adjacency_flat_list();
+  rebuild_adjacency_csr();
   if(!REFINE_MODE)
   {
 

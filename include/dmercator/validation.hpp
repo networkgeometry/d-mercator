@@ -114,23 +114,40 @@ void embeddingSD_t::analyze_simulated_adjacency_list()
 void embeddingSD_t::compute_inferred_ensemble_expected_degrees(int dim, double radius)
 {
 #if defined(DMERCATOR_USE_CUDA)
-  if(CUDA_MODE)
+  if(CUDA_MODE && likelihood_backend)
   {
     bool computed_on_gpu = false;
     if(dim == 1)
     {
-      computed_on_gpu = dmercator::gpu::compute_inferred_expected_degrees_s1(beta, mu, theta, kappa, inferred_ensemble_expected_degree);
+      if(likelihood_backend->set_theta(theta) &&
+         likelihood_backend->set_kappa(kappa))
+      {
+        computed_on_gpu = likelihood_backend->compute_expected_degrees_s1(beta, mu, inferred_ensemble_expected_degree);
+      }
     }
     else
     {
-      computed_on_gpu = dmercator::gpu::compute_inferred_expected_degrees_sd(dim,
-                                                                              beta,
-                                                                              mu,
-                                                                              radius,
-                                                                              NUMERICAL_ZERO,
-                                                                              d_positions,
-                                                                              kappa,
-                                                                              inferred_ensemble_expected_degree);
+      auto &positions_soa = scratch_positions_soa;
+      const int position_stride = dim + 1;
+      positions_soa.assign(static_cast<size_t>(position_stride) * static_cast<size_t>(nb_vertices), 0.0);
+      for(int v = 0; v < nb_vertices; ++v)
+      {
+        for(int axis = 0; axis < position_stride; ++axis)
+        {
+          positions_soa[static_cast<size_t>(axis) * static_cast<size_t>(nb_vertices) + static_cast<size_t>(v)] =
+            d_positions[static_cast<size_t>(v)][static_cast<size_t>(axis)];
+        }
+      }
+      if(likelihood_backend->set_positions_soa(position_stride, positions_soa) &&
+         likelihood_backend->set_kappa(kappa))
+      {
+        computed_on_gpu = likelihood_backend->compute_expected_degrees_sd(dim,
+                                                                          beta,
+                                                                          mu,
+                                                                          radius,
+                                                                          NUMERICAL_ZERO,
+                                                                          inferred_ensemble_expected_degree);
+      }
     }
     if(computed_on_gpu)
     {
@@ -141,7 +158,7 @@ void embeddingSD_t::compute_inferred_ensemble_expected_degrees(int dim, double r
     if(!QUIET_MODE)
     {
       std::clog << TAB << "WARNING: CUDA expected-degree computation failed; switching to CPU. "
-                << dmercator::gpu::last_error() << std::endl;
+                << likelihood_backend->last_error() << std::endl;
     }
   }
 #endif

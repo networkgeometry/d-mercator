@@ -61,6 +61,22 @@ __global__ void inferred_expected_degrees_sd_kernel(const double *positions,
                                                     double numerical_zero,
                                                     double *out_expected_degrees);
 
+__global__ void edge_probabilities_s1_kernel(const double *theta,
+                                             const double *pair_prefactor,
+                                             int nb_vertices,
+                                             int v1,
+                                             double beta,
+                                             double *out_probabilities);
+
+__global__ void edge_probabilities_sd_kernel(const double *positions,
+                                             int position_stride,
+                                             const double *pair_prefactor,
+                                             int nb_vertices,
+                                             int v1,
+                                             double beta,
+                                             double numerical_zero,
+                                             double *out_probabilities);
+
 } // namespace dmercator::gpu::kernels
 
 #endif // DMERCATOR_GPU_KERNELS_CUH

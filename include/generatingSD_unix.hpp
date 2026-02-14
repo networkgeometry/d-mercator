@@ -75,6 +75,10 @@ The following options are available:
   -t             Indicates that the last column of the hidden variables file provides the angular position (i.e., theta) of the vertices.
   -v             Outputs the hidden variables (kappa and theta) used to the generate the network into a file (uses the edgelist's rootname).
   -d [DIMENSION] Specify model's dimension (S^D).
+  -G             Request CUDA acceleration for generation hotspots (if built with CUDA support).
+  -C             Force CPU generation path.
+  -D             Enable deterministic CUDA mode (default).
+  -N             Disable deterministic CUDA mode.
   )""";
   std::cout << help << std::endl;
 }
@@ -103,7 +107,7 @@ bool parse_options(int argc , char *argv[], generatingSD_t &the_graph)
 
   // Parsing options.
   int opt;
-  while ((opt = getopt(argc,argv,"ab:hm:no:s:tvd:")) != -1)
+  while ((opt = getopt(argc,argv,"ab:Chm:no:s:tvd:GDN")) != -1)
   {
     switch(opt)
     {
@@ -149,6 +153,22 @@ bool parse_options(int argc , char *argv[], generatingSD_t &the_graph)
       
       case 'd':
         the_graph.DIMENSION = std::stoi(optarg);
+        break;
+
+      case 'G':
+        the_graph.CUDA_MODE = true;
+        break;
+
+      case 'C':
+        the_graph.CUDA_MODE = false;
+        break;
+
+      case 'D':
+        the_graph.CUDA_DETERMINISTIC_MODE = true;
+        break;
+
+      case 'N':
+        the_graph.CUDA_DETERMINISTIC_MODE = false;
         break;
       
       default:

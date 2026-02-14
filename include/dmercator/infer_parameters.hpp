@@ -291,18 +291,20 @@ void embeddingSD_t::infer_kappas_given_beta_for_all_vertices(int dim)
   if(dim == 1)
   {
 #if defined(DMERCATOR_USE_CUDA)
-    bool gpu_expected_prepared = false;
-    if(CUDA_MODE)
+    bool gpu_expected_ready = false;
+    if(CUDA_MODE && likelihood_backend)
     {
-      gpu_expected_prepared = dmercator::gpu::prepare_inferred_expected_degrees_s1(theta);
-      if(!gpu_expected_prepared)
+      gpu_expected_ready = likelihood_backend->set_theta(theta) &&
+                           likelihood_backend->set_kappa(kappa) &&
+                           likelihood_backend->set_degree(degree);
+      if(!gpu_expected_ready)
       {
         CUDA_MODE = false;
         CUDA_REFINEMENT_ACTIVE = false;
         if(!QUIET_MODE)
         {
           std::clog << TAB << "WARNING: CUDA expected-degree preparation failed; switching to CPU. "
-                    << dmercator::gpu::last_error() << std::endl;
+                    << likelihood_backend->last_error() << std::endl;
         }
       }
     }
@@ -314,22 +316,20 @@ void embeddingSD_t::infer_kappas_given_beta_for_all_vertices(int dim)
     {
 #if defined(DMERCATOR_USE_CUDA)
       bool computed_on_gpu = false;
-      if(CUDA_MODE && gpu_expected_prepared)
+      if(CUDA_MODE && gpu_expected_ready && likelihood_backend)
       {
-        computed_on_gpu = dmercator::gpu::compute_inferred_expected_degrees_s1_prepared(beta,
-                                                                                          mu,
-                                                                                          kappa,
-                                                                                          inferred_ensemble_expected_degree);
+        computed_on_gpu = likelihood_backend->compute_expected_degrees_s1(beta,
+                                                                           mu,
+                                                                           inferred_ensemble_expected_degree);
         if(!computed_on_gpu)
         {
           CUDA_MODE = false;
           CUDA_REFINEMENT_ACTIVE = false;
-          gpu_expected_prepared = false;
-          dmercator::gpu::clear_inferred_expected_degrees_state();
+          gpu_expected_ready = false;
           if(!QUIET_MODE)
           {
             std::clog << TAB << "WARNING: CUDA expected-degree computation failed; switching to CPU. "
-                      << dmercator::gpu::last_error() << std::endl;
+                      << likelihood_backend->last_error() << std::endl;
           }
         }
       }
@@ -356,15 +356,25 @@ void embeddingSD_t::infer_kappas_given_beta_for_all_vertices(int dim)
           kappa[v] += (degree[v] - inferred_ensemble_expected_degree[v]) * uniform_01(engine);
           kappa[v] = std::fabs(kappa[v]);
         }
+#if defined(DMERCATOR_USE_CUDA)
+        if(CUDA_MODE && gpu_expected_ready && likelihood_backend)
+        {
+          if(!likelihood_backend->set_kappa(kappa))
+          {
+            CUDA_MODE = false;
+            CUDA_REFINEMENT_ACTIVE = false;
+            gpu_expected_ready = false;
+            if(!QUIET_MODE)
+            {
+              std::clog << TAB << "WARNING: CUDA kappa update failed; switching to CPU. "
+                        << likelihood_backend->last_error() << std::endl;
+            }
+          }
+        }
+#endif
       }
       ++cnt;
     }
-#if defined(DMERCATOR_USE_CUDA)
-    if(gpu_expected_prepared)
-    {
-      dmercator::gpu::clear_inferred_expected_degrees_state();
-    }
-#endif
 
     if(cnt >= KAPPA_MAX_NB_ITER_CONV)
     {
@@ -383,18 +393,31 @@ void embeddingSD_t::infer_kappas_given_beta_for_all_vertices(int dim)
   bool keep_going = true;
   const double radius = compute_radius(dim, nb_vertices);
 #if defined(DMERCATOR_USE_CUDA)
-  bool gpu_expected_prepared = false;
-  if(CUDA_MODE)
+  bool gpu_expected_ready = false;
+  if(CUDA_MODE && likelihood_backend)
   {
-    gpu_expected_prepared = dmercator::gpu::prepare_inferred_expected_degrees_sd(dim, d_positions);
-    if(!gpu_expected_prepared)
+    auto &positions_soa = scratch_positions_soa;
+    const int position_stride = dim + 1;
+    positions_soa.assign(static_cast<size_t>(position_stride) * static_cast<size_t>(nb_vertices), 0.0);
+    for(int v = 0; v < nb_vertices; ++v)
+    {
+      for(int axis = 0; axis < position_stride; ++axis)
+      {
+        positions_soa[static_cast<size_t>(axis) * static_cast<size_t>(nb_vertices) + static_cast<size_t>(v)] =
+          d_positions[static_cast<size_t>(v)][static_cast<size_t>(axis)];
+      }
+    }
+    gpu_expected_ready = likelihood_backend->set_positions_soa(position_stride, positions_soa) &&
+                         likelihood_backend->set_kappa(kappa) &&
+                         likelihood_backend->set_degree(degree);
+    if(!gpu_expected_ready)
     {
       CUDA_MODE = false;
       CUDA_REFINEMENT_ACTIVE = false;
       if(!QUIET_MODE)
       {
         std::clog << TAB << "WARNING: CUDA expected-degree preparation failed; switching to CPU. "
-                  << dmercator::gpu::last_error() << std::endl;
+                  << likelihood_backend->last_error() << std::endl;
       }
     }
   }
@@ -403,25 +426,23 @@ void embeddingSD_t::infer_kappas_given_beta_for_all_vertices(int dim)
   {
 #if defined(DMERCATOR_USE_CUDA)
     bool computed_on_gpu = false;
-    if(CUDA_MODE && gpu_expected_prepared)
+    if(CUDA_MODE && gpu_expected_ready && likelihood_backend)
     {
-      computed_on_gpu = dmercator::gpu::compute_inferred_expected_degrees_sd_prepared(dim,
-                                                                                        beta,
-                                                                                        mu,
-                                                                                        radius,
-                                                                                        NUMERICAL_ZERO,
-                                                                                        kappa,
-                                                                                        inferred_ensemble_expected_degree);
+      computed_on_gpu = likelihood_backend->compute_expected_degrees_sd(dim,
+                                                                        beta,
+                                                                        mu,
+                                                                        radius,
+                                                                        NUMERICAL_ZERO,
+                                                                        inferred_ensemble_expected_degree);
       if(!computed_on_gpu)
       {
         CUDA_MODE = false;
         CUDA_REFINEMENT_ACTIVE = false;
-        gpu_expected_prepared = false;
-        dmercator::gpu::clear_inferred_expected_degrees_state();
+        gpu_expected_ready = false;
         if(!QUIET_MODE)
         {
           std::clog << TAB << "WARNING: CUDA expected-degree computation failed; switching to CPU. "
-                    << dmercator::gpu::last_error() << std::endl;
+                    << likelihood_backend->last_error() << std::endl;
         }
       }
     }
@@ -448,15 +469,25 @@ void embeddingSD_t::infer_kappas_given_beta_for_all_vertices(int dim)
         kappa[v] += (degree[v] - inferred_ensemble_expected_degree[v]) * uniform_01(engine);
         kappa[v] = std::fabs(kappa[v]);
       }
+#if defined(DMERCATOR_USE_CUDA)
+      if(CUDA_MODE && gpu_expected_ready && likelihood_backend)
+      {
+        if(!likelihood_backend->set_kappa(kappa))
+        {
+          CUDA_MODE = false;
+          CUDA_REFINEMENT_ACTIVE = false;
+          gpu_expected_ready = false;
+          if(!QUIET_MODE)
+          {
+            std::clog << TAB << "WARNING: CUDA kappa update failed; switching to CPU. "
+                      << likelihood_backend->last_error() << std::endl;
+          }
+        }
+      }
+#endif
     }
     ++cnt;
   }
-#if defined(DMERCATOR_USE_CUDA)
-  if(gpu_expected_prepared)
-  {
-    dmercator::gpu::clear_inferred_expected_degrees_state();
-  }
-#endif
 
   if(cnt >= KAPPA_MAX_NB_ITER_CONV)
   {

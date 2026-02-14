@@ -121,6 +121,7 @@ struct Context
   bool expected_sd_ready = false;
 
   std::vector<double> host_flat_positions;
+  std::vector<double> host_kappa;
 
   DeviceBuffer<double> d_theta;
   DeviceBuffer<double> d_positions;
@@ -160,6 +161,8 @@ struct Context
     expected_position_stride = 0;
     expected_s1_ready = false;
     expected_sd_ready = false;
+    host_flat_positions.clear();
+    host_kappa.clear();
   }
 };
 
@@ -246,6 +249,7 @@ bool upload_refine_kappa(Context &ctx, const std::vector<double> &kappa, int exp
   {
     return false;
   }
+  ctx.host_kappa = kappa;
   return true;
 }
 
@@ -897,6 +901,162 @@ bool evaluate_refine_sd_candidates_from_kappa(int dim,
   }
 
   return copy_scores_to_host(ctx, nb_candidates, out_scores);
+}
+
+bool evaluate_generation_s1_probabilities_from_kappa(int v1,
+                                                     double beta,
+                                                     double mu,
+                                                     std::vector<double> &out_probabilities)
+{
+  Context &ctx = context();
+  if(!ctx.refine_s1_ready)
+  {
+    set_last_error("S1 generation context is not initialized.");
+    return false;
+  }
+  if(v1 < 0 || v1 >= ctx.refine_nb_vertices)
+  {
+    set_last_error("S1 generation vertex index is out of bounds.");
+    return false;
+  }
+  if(mu <= 0.0)
+  {
+    set_last_error("S1 generation requires mu > 0.");
+    return false;
+  }
+  const std::size_t nb_vertices = static_cast<std::size_t>(ctx.refine_nb_vertices);
+  if(ctx.d_kappa.ptr == nullptr || ctx.d_kappa.capacity < nb_vertices)
+  {
+    set_last_error("S1 generation kappa buffer is not prepared on GPU.");
+    return false;
+  }
+  if(ctx.host_kappa.size() != nb_vertices)
+  {
+    set_last_error("S1 generation host kappa cache is unavailable.");
+    return false;
+  }
+
+  if(!ctx.d_pair_prefactor.ensure(nb_vertices) ||
+     !ctx.d_scores.ensure(nb_vertices) ||
+     !ctx.h_scores.ensure(nb_vertices))
+  {
+    return false;
+  }
+
+  const double prefactor = static_cast<double>(ctx.refine_nb_vertices) / (2.0 * PI * mu);
+  const double prefactor_over_kappa_v1 = prefactor / ctx.host_kappa[static_cast<std::size_t>(v1)];
+
+  constexpr int prep_threads = 256;
+  const int prep_blocks = static_cast<int>((nb_vertices + prep_threads - 1) / prep_threads);
+  kernels::prepare_pair_prefactor_s1_kernel<<<prep_blocks, prep_threads, 0, ctx.stream>>>(
+    ctx.d_kappa.ptr,
+    static_cast<int>(nb_vertices),
+    v1,
+    prefactor_over_kappa_v1,
+    ctx.d_pair_prefactor.ptr);
+  if(!DMERCATOR_CUDA_CHECK_KERNEL())
+  {
+    return false;
+  }
+
+  constexpr int threads_per_block = 256;
+  const int blocks = static_cast<int>((nb_vertices + threads_per_block - 1) / threads_per_block);
+  kernels::edge_probabilities_s1_kernel<<<blocks, threads_per_block, 0, ctx.stream>>>(
+    ctx.d_theta.ptr,
+    ctx.d_pair_prefactor.ptr,
+    static_cast<int>(nb_vertices),
+    v1,
+    beta,
+    ctx.d_scores.ptr);
+  if(!DMERCATOR_CUDA_CHECK_KERNEL())
+  {
+    return false;
+  }
+
+  return copy_scores_to_host(ctx, nb_vertices, out_probabilities);
+}
+
+bool evaluate_generation_sd_probabilities_from_kappa(int dim,
+                                                     int v1,
+                                                     double beta,
+                                                     double numerical_zero,
+                                                     double mu,
+                                                     double radius,
+                                                     std::vector<double> &out_probabilities)
+{
+  Context &ctx = context();
+  if(!ctx.refine_sd_ready)
+  {
+    set_last_error("S^D generation context is not initialized.");
+    return false;
+  }
+  if(dim < 1)
+  {
+    set_last_error("S^D generation requires dim >= 1.");
+    return false;
+  }
+  const int position_stride = dim + 1;
+  if(position_stride != ctx.refine_position_stride)
+  {
+    set_last_error("S^D generation dimension mismatch.");
+    return false;
+  }
+  if(v1 < 0 || v1 >= ctx.refine_nb_vertices)
+  {
+    set_last_error("S^D generation vertex index is out of bounds.");
+    return false;
+  }
+  if(mu <= 0.0)
+  {
+    set_last_error("S^D generation requires mu > 0.");
+    return false;
+  }
+  const std::size_t nb_vertices = static_cast<std::size_t>(ctx.refine_nb_vertices);
+  if(ctx.d_kappa.ptr == nullptr || ctx.d_kappa.capacity < nb_vertices)
+  {
+    set_last_error("S^D generation kappa buffer is not prepared on GPU.");
+    return false;
+  }
+
+  if(!ctx.d_pair_prefactor.ensure(nb_vertices) ||
+     !ctx.d_scores.ensure(nb_vertices) ||
+     !ctx.h_scores.ensure(nb_vertices))
+  {
+    return false;
+  }
+
+  constexpr int prep_threads = 256;
+  const int prep_blocks = static_cast<int>((nb_vertices + prep_threads - 1) / prep_threads);
+  kernels::prepare_pair_prefactor_sd_kernel<<<prep_blocks, prep_threads, 0, ctx.stream>>>(
+    ctx.d_kappa.ptr,
+    static_cast<int>(nb_vertices),
+    v1,
+    mu,
+    radius,
+    1.0 / static_cast<double>(dim),
+    ctx.d_pair_prefactor.ptr);
+  if(!DMERCATOR_CUDA_CHECK_KERNEL())
+  {
+    return false;
+  }
+
+  constexpr int threads_per_block = 256;
+  const int blocks = static_cast<int>((nb_vertices + threads_per_block - 1) / threads_per_block);
+  kernels::edge_probabilities_sd_kernel<<<blocks, threads_per_block, 0, ctx.stream>>>(
+    ctx.d_positions.ptr,
+    position_stride,
+    ctx.d_pair_prefactor.ptr,
+    static_cast<int>(nb_vertices),
+    v1,
+    beta,
+    numerical_zero,
+    ctx.d_scores.ptr);
+  if(!DMERCATOR_CUDA_CHECK_KERNEL())
+  {
+    return false;
+  }
+
+  return copy_scores_to_host(ctx, nb_vertices, out_probabilities);
 }
 
 void clear_inferred_expected_degrees_state()
