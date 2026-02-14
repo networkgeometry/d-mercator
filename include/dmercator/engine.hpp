@@ -331,6 +331,9 @@ class embeddingSD_t
     std::vector<double> scratch_pair_prefactor;
     std::vector<double> scratch_mean_vector;
     std::vector<double> scratch_proposed_vector;
+    std::vector<double> scratch_candidate_angles;
+    std::vector<double> scratch_candidate_scores;
+    std::vector<double> scratch_candidate_positions_flat;
 
     bool CUDA_RUNTIME_AVAILABLE = false;
     bool CUDA_REFINEMENT_ACTIVE = false;

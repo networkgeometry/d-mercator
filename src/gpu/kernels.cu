@@ -38,6 +38,46 @@ __device__ inline double angular_distance_sd(const double *pos1,
   return acos(result);
 }
 
+__global__ void prepare_pair_prefactor_s1_kernel(const double *kappa,
+                                                 int nb_vertices,
+                                                 int v1,
+                                                 double prefactor_over_kappa_v1,
+                                                 double *out_pair_prefactor)
+{
+  const int v2 = blockIdx.x * blockDim.x + threadIdx.x;
+  if(v2 >= nb_vertices)
+  {
+    return;
+  }
+  if(v2 == v1)
+  {
+    out_pair_prefactor[v2] = 0.0;
+    return;
+  }
+  out_pair_prefactor[v2] = prefactor_over_kappa_v1 / kappa[v2];
+}
+
+__global__ void prepare_pair_prefactor_sd_kernel(const double *kappa,
+                                                 int nb_vertices,
+                                                 int v1,
+                                                 double mu,
+                                                 double radius,
+                                                 double inv_dim,
+                                                 double *out_pair_prefactor)
+{
+  const int v2 = blockIdx.x * blockDim.x + threadIdx.x;
+  if(v2 >= nb_vertices)
+  {
+    return;
+  }
+  if(v2 == v1)
+  {
+    out_pair_prefactor[v2] = 0.0;
+    return;
+  }
+  out_pair_prefactor[v2] = radius / pow(mu * kappa[v1] * kappa[v2], inv_dim);
+}
+
 __global__ void evaluate_refine_s1_candidates_kernel(const double *theta,
                                                      const double *pair_prefactor,
                                                      const int *neighbors,

@@ -11,6 +11,8 @@ import time
 from pathlib import Path
 from typing import Dict, List, Any
 
+import networkx as nx
+
 
 TIMING_KEYS = [
     "total_time_ms",
@@ -31,6 +33,25 @@ def parse_sizes(raw: str) -> List[int]:
     return [int(token.strip()) for token in raw.split(",") if token.strip()]
 
 
+def parse_backends(raw: str) -> List[str]:
+    if not raw.strip():
+        raise SystemExit("--backends must not be empty")
+
+    backends: List[str] = []
+    for token in raw.split(","):
+        backend = token.strip().lower()
+        if not backend:
+            continue
+        if backend not in ("cpu", "gpu"):
+            raise SystemExit(f"Unsupported backend in --backends: {backend}. Allowed: cpu,gpu")
+        if backend not in backends:
+            backends.append(backend)
+
+    if not backends:
+        raise SystemExit("--backends must include at least one of: cpu,gpu")
+    return backends
+
+
 def run_cmd(
     cmd: List[str],
     cwd: Path,
@@ -38,14 +59,16 @@ def run_cmd(
     capture_output: bool = False,
 ) -> subprocess.CompletedProcess:
     print("+", " ".join(cmd))
-    return subprocess.run(
-        cmd,
-        cwd=str(cwd),
-        env=env,
-        text=True,
-        capture_output=capture_output,
-        check=True,
-    )
+    kwargs: Dict[str, Any] = {
+        "cwd": str(cwd),
+        "env": env,
+        "universal_newlines": True,
+        "check": True,
+    }
+    if capture_output:
+        kwargs["stdout"] = subprocess.PIPE
+        kwargs["stderr"] = subprocess.PIPE
+    return subprocess.run(cmd, **kwargs)
 
 
 def parse_timing_json(stdout: str, stderr: str) -> Dict[str, Any]:
@@ -65,9 +88,22 @@ def parse_timing_json(stdout: str, stderr: str) -> Dict[str, Any]:
 
 def write_hidden_variables(path: Path, nodes: int, dimension: int, seed: int) -> None:
     rng = random.Random(seed)
+    gamma = 2.5
+    mean_degree = 10.0
+    kappa_0 = (
+        (1.0 - 1.0 / nodes)
+        / (1.0 - nodes ** ((2.0 - gamma) / (gamma - 1.0)))
+        * (gamma - 2.0)
+        / (gamma - 1.0)
+        * mean_degree
+    )
+    kappa_c = kappa_0 * nodes ** (1.0 / (gamma - 1.0))
+    scale = 1.0 - (kappa_c / kappa_0) ** (1.0 - gamma)
+
     with path.open("w", encoding="utf-8") as f:
         for _ in range(nodes):
-            kappa = 2.0 + 10.0 * rng.random()
+            u = rng.random()
+            kappa = kappa_0 * (1.0 - u * scale) ** (1.0 / (1.0 - gamma))
             if dimension == 1:
                 theta = 2.0 * math.pi * rng.random()
                 f.write(f"{kappa:.17g} {theta:.17g}\n")
@@ -80,6 +116,26 @@ def write_hidden_variables(path: Path, nodes: int, dimension: int, seed: int) ->
                 norm = 1.0
             coords = [c / norm for c in coords]
             f.write(f"{kappa:.17g} {' '.join(f'{c:.17g}' for c in coords)}\n")
+
+
+def extract_gcc_edge_list(edge_path: Path, out_path: Path) -> Path:
+    graph = nx.read_edgelist(edge_path, comments="#", data=False)
+    if graph.number_of_edges() == 0:
+        raise RuntimeError(f"No edges found in {edge_path}")
+    gcc_nodes = max(nx.connected_components(graph), key=len)
+    gcc_graph = graph.subgraph(gcc_nodes).copy()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w", encoding="utf-8") as f:
+        f.write("# source target\n")
+        for u, v in gcc_graph.edges():
+            f.write(f"{u} {v}\n")
+    print(
+        "GCC: kept"
+        f" nodes={gcc_graph.number_of_nodes()}/{graph.number_of_nodes()}"
+        f" edges={gcc_graph.number_of_edges()}/{graph.number_of_edges()}"
+        f" -> {out_path}"
+    )
+    return out_path
 
 
 def required_binary(path: Path) -> Path:
@@ -133,10 +189,20 @@ def benchmark_backend(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Benchmark embedding runtime on CPU and GPU for fixed network sizes."
+        description="Benchmark embedding runtime on selected CPU/GPU backends for fixed network sizes."
     )
-    parser.add_argument("--cpu-build-dir", required=True, help="Build directory configured with -DUSE_CUDA=OFF.")
-    parser.add_argument("--gpu-build-dir", required=True, help="Build directory configured with -DUSE_CUDA=ON.")
+    parser.add_argument("--cpu-build-dir", help="Build directory configured with -DUSE_CUDA=OFF.")
+    parser.add_argument("--gpu-build-dir", help="Build directory configured with -DUSE_CUDA=ON.")
+    parser.add_argument(
+        "--generator-build-dir",
+        default=None,
+        help="Build directory containing generate_sd. Defaults to cpu build dir when available, otherwise gpu build dir.",
+    )
+    parser.add_argument(
+        "--backends",
+        default="cpu,gpu",
+        help="Comma-separated backends to benchmark (subset of: cpu,gpu). Default: cpu,gpu",
+    )
     parser.add_argument("--out-dir", default="benchmarks/cpu_gpu")
     parser.add_argument("--sizes", default="1000,2000,5000,10000,20000,50000")
     parser.add_argument("--dimension", type=int, default=1)
@@ -151,17 +217,39 @@ def main() -> int:
     if args.reps < 1:
         raise SystemExit("--reps must be >= 1")
 
+    selected_backends = parse_backends(args.backends)
+    if "cpu" in selected_backends and not args.cpu_build_dir:
+        raise SystemExit("--cpu-build-dir is required when --backends includes cpu")
+    if "gpu" in selected_backends and not args.gpu_build_dir:
+        raise SystemExit("--gpu-build-dir is required when --backends includes gpu")
+
     repo_root = Path(__file__).resolve().parents[1]
-    cpu_build_dir = Path(args.cpu_build_dir).resolve()
-    gpu_build_dir = Path(args.gpu_build_dir).resolve()
+    cpu_build_dir = Path(args.cpu_build_dir).resolve() if args.cpu_build_dir else None
+    gpu_build_dir = Path(args.gpu_build_dir).resolve() if args.gpu_build_dir else None
+    if args.generator_build_dir:
+        generator_build_dir = Path(args.generator_build_dir).resolve()
+    elif cpu_build_dir is not None:
+        generator_build_dir = cpu_build_dir
+    elif gpu_build_dir is not None:
+        generator_build_dir = gpu_build_dir
+    else:
+        raise SystemExit("Unable to resolve generator build dir. Provide --generator-build-dir.")
+
     out_dir = Path(args.out_dir).resolve()
     artifacts_dir = out_dir / "artifacts"
     out_dir.mkdir(parents=True, exist_ok=True)
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-    cpu_generate_bin = required_binary(cpu_build_dir / "generate_sd")
-    cpu_embed_bin = required_binary(cpu_build_dir / "embed_sd")
-    gpu_embed_bin = required_binary(gpu_build_dir / "embed_sd")
+    generate_bin = required_binary(generator_build_dir / "generate_sd")
+    embed_bins: Dict[str, Path] = {}
+    if "cpu" in selected_backends:
+        if cpu_build_dir is None:
+            raise SystemExit("--cpu-build-dir is required when --backends includes cpu")
+        embed_bins["cpu"] = required_binary(cpu_build_dir / "embed_sd")
+    if "gpu" in selected_backends:
+        if gpu_build_dir is None:
+            raise SystemExit("--gpu-build-dir is required when --backends includes gpu")
+        embed_bins["gpu"] = required_binary(gpu_build_dir / "embed_sd")
 
     sizes = parse_sizes(args.sizes)
     env = os.environ.copy()
@@ -180,13 +268,14 @@ def main() -> int:
         hidden_path = case_dir / "hidden_variables.txt"
         graph_root = case_dir / "synthetic_sd"
         edge_path = Path(str(graph_root) + ".edge")
+        gcc_edge_path = Path(str(graph_root) + "_GC.edge")
 
         write_hidden_variables(hidden_path, size, args.dimension, graph_seed)
 
         t0_gen = time.perf_counter()
         run_cmd(
             [
-                str(cpu_generate_bin),
+                str(generate_bin),
                 "-d",
                 str(args.dimension),
                 "-b",
@@ -208,14 +297,17 @@ def main() -> int:
         if not edge_path.exists():
             raise RuntimeError(f"Generated edge list missing: {edge_path}")
 
+        gcc_edge_path = extract_gcc_edge_list(edge_path, gcc_edge_path)
+
         for rep in range(args.reps):
             rep_seed = graph_seed + rep
-            for backend, embed_bin in (("cpu", cpu_embed_bin), ("gpu", gpu_embed_bin)):
+            for backend in selected_backends:
+                embed_bin = embed_bins[backend]
                 out_root = case_dir / f"embed_{backend}_rep{rep:02d}"
                 timing = benchmark_backend(
                     backend_name=backend,
                     embed_bin=embed_bin,
-                    edge_path=edge_path,
+                    edge_path=gcc_edge_path,
                     out_root=out_root,
                     dimension=args.dimension,
                     beta=args.beta,
@@ -238,7 +330,7 @@ def main() -> int:
                     "nb_vertices_reported": int(timing.get("nb_vertices", size)),
                     "nb_edges_reported": int(timing.get("nb_edges", -1)),
                     "build_dir": str(embed_bin.parent),
-                    "edge_file": str(edge_path),
+                    "edge_file": str(gcc_edge_path),
                 }
                 for key in TIMING_KEYS:
                     row[key] = float(timing.get(key, float("nan")))

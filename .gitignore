@@ -36,3 +36,9 @@ lib/__pycache__
 __pycache__/
 bench/
 bench_smoke/
+notebooks/.ipynb_checkpoints
+benchmark_runs
+build_cpu/
+build_cuda/
+build-cuda/
+test_gpu_*

@@ -136,18 +136,29 @@ int embeddingSD_t::refine_angle(int v1)
 
   const double prefactor = nb_vertices / (2 * PI * mu);
   const double prefactor_over_kappa_v1 = prefactor / kappa[v1];
-  if(scratch_pair_prefactor.size() != static_cast<size_t>(nb_vertices))
+
+  bool pair_prefactor_ready = false;
+  auto ensure_pair_prefactor = [&]() -> const std::vector<double> &
   {
-    scratch_pair_prefactor.assign(nb_vertices, 0.0);
-  }
-  auto &pair_prefactor = scratch_pair_prefactor;
-  for(int v2(0); v2<nb_vertices; ++v2)
-  {
-    pair_prefactor[v2] = prefactor_over_kappa_v1 / kappa[v2];
-  }
+    if(!pair_prefactor_ready)
+    {
+      if(scratch_pair_prefactor.size() != static_cast<size_t>(nb_vertices))
+      {
+        scratch_pair_prefactor.assign(nb_vertices, 0.0);
+      }
+      auto &pair_prefactor = scratch_pair_prefactor;
+      for(int v2(0); v2<nb_vertices; ++v2)
+      {
+        pair_prefactor[v2] = prefactor_over_kappa_v1 / kappa[v2];
+      }
+      pair_prefactor_ready = true;
+    }
+    return scratch_pair_prefactor;
+  };
 
   auto compute_local_loglikelihood = [&](double angle) -> double
   {
+    const auto &pair_prefactor = ensure_pair_prefactor();
     double local_loglikelihood = 0;
     for(int v2(0); v2<nb_vertices; ++v2)
     {
@@ -197,7 +208,8 @@ int embeddingSD_t::refine_angle(int v1)
   max_angle /= 2;
 
   int _nb_new_angles_to_try = MIN_NB_ANGLES_TO_TRY * std::max(1.0, std::log(static_cast<double>(nb_vertices)));
-  std::vector<double> candidate_angles;
+  auto &candidate_angles = scratch_candidate_angles;
+  candidate_angles.clear();
   candidate_angles.reserve(static_cast<size_t>(_nb_new_angles_to_try) + 1);
   candidate_angles.push_back(best_angle);
   for(int e(0); e<_nb_new_angles_to_try; ++e)
@@ -210,12 +222,18 @@ int embeddingSD_t::refine_angle(int v1)
     candidate_angles.push_back(tmp_angle);
   }
 
-  std::vector<double> candidate_scores(candidate_angles.size(), 0.0);
+  auto &candidate_scores = scratch_candidate_scores;
+  candidate_scores.assign(candidate_angles.size(), 0.0);
 #if defined(DMERCATOR_USE_CUDA)
   bool scored_on_gpu = false;
   if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE)
   {
-    scored_on_gpu = dmercator::gpu::evaluate_refine_s1_candidates(v1, beta, pair_prefactor, neighbors, candidate_angles, candidate_scores);
+    scored_on_gpu = dmercator::gpu::evaluate_refine_s1_candidates_from_kappa(v1,
+                                                                              beta,
+                                                                              prefactor_over_kappa_v1,
+                                                                              neighbors,
+                                                                              candidate_angles,
+                                                                              candidate_scores);
     if(!scored_on_gpu)
     {
       CUDA_REFINEMENT_ACTIVE = false;
@@ -359,20 +377,29 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
 
   const int position_stride = dim + 1;
   const double inv_dim = 1.0 / static_cast<double>(dim);
-  if(scratch_pair_prefactor.size() != static_cast<size_t>(nb_vertices))
+  bool pair_prefactor_ready = false;
+  auto ensure_pair_prefactor = [&]() -> const std::vector<double> &
   {
-    scratch_pair_prefactor.assign(nb_vertices, 0.0);
-  }
-  auto &pair_prefactor = scratch_pair_prefactor;
-  std::fill(pair_prefactor.begin(), pair_prefactor.end(), 0.0);
-  for(int v2(0); v2<nb_vertices; ++v2)
-  {
-    if(v2 == v1)
+    if(!pair_prefactor_ready)
     {
-      continue;
+      if(scratch_pair_prefactor.size() != static_cast<size_t>(nb_vertices))
+      {
+        scratch_pair_prefactor.assign(nb_vertices, 0.0);
+      }
+      auto &pair_prefactor = scratch_pair_prefactor;
+      std::fill(pair_prefactor.begin(), pair_prefactor.end(), 0.0);
+      for(int v2(0); v2<nb_vertices; ++v2)
+      {
+        if(v2 == v1)
+        {
+          continue;
+        }
+        pair_prefactor[v2] = radius / std::pow(mu * kappa[v1] * kappa[v2], inv_dim);
+      }
+      pair_prefactor_ready = true;
     }
-    pair_prefactor[v2] = radius / std::pow(mu * kappa[v1] * kappa[v2], inv_dim);
-  }
+    return scratch_pair_prefactor;
+  };
 
   auto compute_angle_with_position = [&](const double *pos1, const std::vector<double> &pos2) -> double
   {
@@ -396,6 +423,7 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
 
   auto compute_local_loglikelihood = [&](const double *position_ptr) -> double
   {
+    const auto &pair_prefactor = ensure_pair_prefactor();
     double local_loglikelihood = 0;
     for(int v2(0); v2<nb_vertices; ++v2)
     {
@@ -453,7 +481,8 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
   auto &proposed_position = scratch_proposed_vector;
   const double inv_radius = 1.0 / radius;
 
-  std::vector<double> candidate_positions_flat;
+  auto &candidate_positions_flat = scratch_candidate_positions_flat;
+  candidate_positions_flat.clear();
   candidate_positions_flat.reserve(static_cast<size_t>(_nb_new_angles_to_try + 1) * static_cast<size_t>(position_stride));
   candidate_positions_flat.insert(candidate_positions_flat.end(), best_position.begin(), best_position.end());
   for(int e(0); e<_nb_new_angles_to_try; ++e)
@@ -465,19 +494,21 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
   }
 
   const size_t nb_candidates = candidate_positions_flat.size() / static_cast<size_t>(position_stride);
-  std::vector<double> candidate_scores(nb_candidates, 0.0);
+  auto &candidate_scores = scratch_candidate_scores;
+  candidate_scores.assign(nb_candidates, 0.0);
 #if defined(DMERCATOR_USE_CUDA)
   bool scored_on_gpu = false;
   if(CUDA_MODE && CUDA_REFINEMENT_ACTIVE)
   {
-    scored_on_gpu = dmercator::gpu::evaluate_refine_sd_candidates(dim,
-                                                                   v1,
-                                                                   beta,
-                                                                   NUMERICAL_ZERO,
-                                                                   pair_prefactor,
-                                                                   neighbors,
-                                                                   candidate_positions_flat,
-                                                                   candidate_scores);
+    scored_on_gpu = dmercator::gpu::evaluate_refine_sd_candidates_from_kappa(dim,
+                                                                              v1,
+                                                                              beta,
+                                                                              NUMERICAL_ZERO,
+                                                                              mu,
+                                                                              radius,
+                                                                              neighbors,
+                                                                              candidate_positions_flat,
+                                                                              candidate_scores);
     if(!scored_on_gpu)
     {
       CUDA_REFINEMENT_ACTIVE = false;
@@ -543,7 +574,7 @@ void embeddingSD_t::refine_positions(int dim)
 #if defined(DMERCATOR_USE_CUDA)
     if(OPTIMIZED_PERF_MODE && CUDA_MODE)
     {
-      CUDA_REFINEMENT_ACTIVE = dmercator::gpu::begin_refine_s1(theta);
+      CUDA_REFINEMENT_ACTIVE = dmercator::gpu::begin_refine_s1(theta, kappa);
       if(!CUDA_REFINEMENT_ACTIVE)
       {
         CUDA_MODE = false;
@@ -591,7 +622,7 @@ void embeddingSD_t::refine_positions(int dim)
 #if defined(DMERCATOR_USE_CUDA)
   if(OPTIMIZED_PERF_MODE && CUDA_MODE)
   {
-    CUDA_REFINEMENT_ACTIVE = dmercator::gpu::begin_refine_sd(dim, d_positions);
+    CUDA_REFINEMENT_ACTIVE = dmercator::gpu::begin_refine_sd(dim, d_positions, kappa);
     if(!CUDA_REFINEMENT_ACTIVE)
     {
       CUDA_MODE = false;

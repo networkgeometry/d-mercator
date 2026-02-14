@@ -5,6 +5,20 @@
 
 namespace dmercator::gpu::kernels {
 
+__global__ void prepare_pair_prefactor_s1_kernel(const double *kappa,
+                                                 int nb_vertices,
+                                                 int v1,
+                                                 double prefactor_over_kappa_v1,
+                                                 double *out_pair_prefactor);
+
+__global__ void prepare_pair_prefactor_sd_kernel(const double *kappa,
+                                                 int nb_vertices,
+                                                 int v1,
+                                                 double mu,
+                                                 double radius,
+                                                 double inv_dim,
+                                                 double *out_pair_prefactor);
+
 __global__ void evaluate_refine_s1_candidates_kernel(const double *theta,
                                                      const double *pair_prefactor,
                                                      const int *neighbors,
