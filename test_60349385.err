@@ -153,3 +153,11 @@ Convergence reached after 12 iterations.
 Machine-readable ground truth saved to /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60349385/artifacts/d1_n1000_seed1013345/synthetic_sd.truth.csv
 Convergence reached after 16 iterations.
 Machine-readable ground truth saved to /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60349385/artifacts/d1_n2000_seed1014345/synthetic_sd.truth.csv
+Convergence reached after 13 iterations.
+Machine-readable ground truth saved to /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60349385/artifacts/d1_n5000_seed1017345/synthetic_sd.truth.csv
+Convergence reached after 17 iterations.
+Machine-readable ground truth saved to /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60349385/artifacts/d1_n10000_seed1022345/synthetic_sd.truth.csv
+Convergence reached after 13 iterations.
+Machine-readable ground truth saved to /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60349385/artifacts/d1_n20000_seed1032345/synthetic_sd.truth.csv
+Convergence reached after 16 iterations.
+Machine-readable ground truth saved to /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60349385/artifacts/d1_n50000_seed1062345/synthetic_sd.truth.csv

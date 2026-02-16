@@ -1,0 +1,53 @@
++ [[ 3 -lt 2 ]]
++ EDGE_PATH=data/ogb/ogbl_ppa/raw/ppa_GC.edge
++ DIMENSION=1
++ VALIDATION_MODE=true
++ module load gcc/12.2.0-fasrc01
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_sh_dbg=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output
+Shell debugging restarted
++ unset __lmod_sh_dbg
++ return 0
++ module load cmake
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_sh_dbg=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output
+Shell debugging restarted
++ unset __lmod_sh_dbg
++ return 0
++ module load cuda/12.9.1-fasrc01
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_sh_dbg=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output
+Shell debugging restarted
++ unset __lmod_sh_dbg
++ return 0
++ nvidia-smi
++ REPO_ROOT=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator
++ THREADS=8
++ CUDA_BUILD_DIR=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda
++ RESULTS_DIR=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60577268
++ export OMP_NUM_THREADS=1
++ OMP_NUM_THREADS=1
++ [[ ! -f data/ogb/ogbl_ppa/raw/ppa_GC.edge ]]
++ cmake -S /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator -B /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda -DCMAKE_BUILD_TYPE=Release -DDMERCATOR_RELEASE_O3=ON -DUSE_CUDA=ON
++ cmake --build /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda -j 8
++ mkdir -p /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60577268
+++ basename data/ogb/ogbl_ppa/raw/ppa_GC.edge
++ EDGE_BASENAME=ppa_GC.edge
++ EDGE_STEM=ppa_GC
++ OUT_ROOT=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60577268/ppa_GC
++ VALIDATION_FLAG=
++ case "${VALIDATION_MODE}" in
++ VALIDATION_FLAG=-v
++ /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda/embed_sd -d 1 -G -D -v -o /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60577268/ppa_GC data/ogb/ogbl_ppa/raw/ppa_GC.edge

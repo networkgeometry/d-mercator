@@ -66,7 +66,6 @@ case "${VALIDATION_MODE}" in
  esac
 
 "${CUDA_BUILD_DIR}/embed_sd" \
-  -q \
   -d "${DIMENSION}" \
   -G -D \
   ${VALIDATION_FLAG} \
