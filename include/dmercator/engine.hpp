@@ -12,6 +12,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <random>
@@ -91,6 +92,7 @@ class embeddingSD_t
     int CHARACTERIZATION_NB_GRAPHS = 100;
 
     const int MIN_NB_ANGLES_TO_TRY = 100;
+    int REFINE_NEGATIVE_SAMPLES = 64;
 
     std::string EDGELIST_FILENAME;
 
@@ -246,6 +248,27 @@ class embeddingSD_t
 
     double compute_pairwise_loglikelihood(int v1, double t1, int v2, double t2, bool neighbors);
     double compute_pairwise_loglikelihood(int dim, int v1, const std::vector<double> &pos1, int v2, const std::vector<double> &pos2, bool neighbors, double radius);
+    void sample_negative_vertices(int v1, int sample_count, std::vector<int> &negative_vertices);
+    void prepare_refinement_negatives(int v1,
+                                      std::vector<int> &negative_vertices,
+                                      double &negative_weight,
+                                      bool &exact_negative_sweep);
+    double score_refinement_candidate_1d(int v1,
+                                         double candidate_angle,
+                                         const std::vector<int> &neighbors,
+                                         const std::vector<double> &pair_prefactor,
+                                         const std::vector<int> &negative_vertices,
+                                         double negative_weight,
+                                         bool exact_negative_sweep);
+    double score_refinement_candidate_dim(int dim,
+                                          int v1,
+                                          const double *candidate_position,
+                                          const std::vector<int> &neighbors,
+                                          const std::vector<double> &pair_prefactor,
+                                          const std::vector<int> &negative_vertices,
+                                          double negative_weight,
+                                          bool exact_negative_sweep,
+                                          int position_stride);
 
     void find_initial_ordering(std::vector<int> &ordering, std::vector<double> &raw_theta);
     void find_initial_ordering(std::vector<std::vector<double>> &positions, int dim);
@@ -330,6 +353,8 @@ class embeddingSD_t
 
     // Reused scratch buffers to avoid repeated allocations in hot loops.
     std::vector<int> scratch_neighbors_int;
+    std::vector<int> scratch_negative_vertices;
+    std::vector<int> scratch_sampling_marks;
     std::vector<double> scratch_pair_prefactor;
     std::vector<double> scratch_mean_vector;
     std::vector<double> scratch_proposed_vector;
@@ -338,6 +363,7 @@ class embeddingSD_t
     std::vector<double> scratch_candidate_positions_flat;
     std::vector<double> scratch_candidate_positions_soa;
     std::vector<double> scratch_positions_soa;
+    int scratch_sampling_token = 1;
 
     bool CUDA_RUNTIME_AVAILABLE = false;
     bool CUDA_REFINEMENT_ACTIVE = false;

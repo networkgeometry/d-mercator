@@ -43,6 +43,9 @@ class LikelihoodBackend
                                      double prefactor,
                                      double beta,
                                      const std::vector<double> &candidate_theta,
+                                     const std::vector<int> &negative_vertices,
+                                     double negative_weight,
+                                     bool exact_negative_sweep,
                                      std::vector<double> &out_scores) = 0;
 
     // Candidate positions must be SoA:
@@ -54,6 +57,9 @@ class LikelihoodBackend
                                      double beta,
                                      double numerical_zero,
                                      const std::vector<double> &candidate_positions_soa,
+                                     const std::vector<int> &negative_vertices,
+                                     double negative_weight,
+                                     bool exact_negative_sweep,
                                      std::vector<double> &out_scores) = 0;
 
     virtual bool compute_expected_degrees_s1(double beta,

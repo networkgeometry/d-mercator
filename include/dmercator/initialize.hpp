@@ -47,6 +47,19 @@ void embeddingSD_t::initialize()
     if(!QUIET_MODE) { std::clog << "inferred positions filename: " << ALREADY_INFERRED_PARAMETERS_FILENAME                     << std::endl; }
   }
   if(!QUIET_MODE) { std::clog << "seed: "              << SEED                                                                 << std::endl; }
+  if(!QUIET_MODE)
+  {
+    std::clog << "refinement negatives: ";
+    if(REFINE_NEGATIVE_SAMPLES > 0)
+    {
+      std::clog << REFINE_NEGATIVE_SAMPLES << " sampled non-neighbors per vertex";
+    }
+    else
+    {
+      std::clog << "exact full sweep";
+    }
+    std::clog << std::endl;
+  }
 
   if(!QUIET_MODE) { std::clog                                                                                                  << std::endl; }
   if(!QUIET_MODE) { std::clog << "Loading edgelist..."; }

@@ -6,8 +6,8 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=64000 # Memory per node in MB (see also --mem-per-cpu)
 #SBATCH --open-mode=append # Append when writing files
-#SBATCH -o test_gpu_%j.out # Standard out goes to this file
-#SBATCH -e test_gpu_%j.err # Standard err goes to this file
+#SBATCH -o test_gpu_new_%j.out # Standard out goes to this file
+#SBATCH -e test_gpu_new_%j.err # Standard err goes to this file
 
 set -euo pipefail
 set -x
@@ -27,11 +27,12 @@ THREADS="${SLURM_CPUS_PER_TASK:-8}"
 CUDA_BUILD_DIR="${CUDA_BUILD_DIR:-${REPO_ROOT}/build_cuda}"
 RESULTS_DIR="${RESULTS_DIR:-${REPO_ROOT}/benchmark_runs/${SLURM_JOB_ID}}"
 
-SIZES="${SIZES:-5000,10000,20000,50000,100000,200000,500000,1000000}"
+SIZES="${SIZES:-50000,100000,500000,1000000}"
 DIMENSION="${DIMENSION:-1}"
-REPS="${REPS:-1}"
-SEED="${SEED:-12345}"
-BETA="${BETA:-2}"
+SAMPLE_COUNTS="${SAMPLE_COUNTS:-16,64,256}"
+SEED="${SEED:-42}"
+GAMMA="${GAMMA:-2.5}"
+MEAN_DEGREE="${MEAN_DEGREE:-10.0}"
 
 export OMP_NUM_THREADS="${OMP_NUM_THREADS:-$THREADS}"
 
@@ -43,14 +44,17 @@ cmake --build "${CUDA_BUILD_DIR}" -j "${THREADS}"
 
 mkdir -p "${RESULTS_DIR}"
 
-python3 "${REPO_ROOT}/python/benchmark_cpu_gpu.py" \
+python3 "${REPO_ROOT}/python/benchmark_negative_sampling_cpu_gpu.py" \
   --backends gpu \
   --generator-build-dir "${CUDA_BUILD_DIR}" \
   --gpu-build-dir "${CUDA_BUILD_DIR}" \
   --out-dir "${RESULTS_DIR}" \
   --sizes "${SIZES}" \
-  --dimension "${DIMENSION}" \
-  --reps "${REPS}" \
+  --dimensions "${DIMENSION}" \
+  --sample-counts "${SAMPLE_COUNTS}" \
   --seed "${SEED}" \
-  --beta "${BETA}" \
+  --beta-mode two-times-dim \
+  --gamma "${GAMMA}" \
+  --mean-degree "${MEAN_DEGREE}" \
+  --quality-size-limit 10000 \
   --omp-threads "${OMP_NUM_THREADS}"

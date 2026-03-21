@@ -46,6 +46,10 @@ The following options are available:
                    programs.
     -f             Fast mode. Does not infer the positions based on likelihood
                    maximization, rather uses only the EigenMap method.
+    -j [SAMPLES]   Set the number of sampled non-neighbors used during
+                   refinement. Default: 64. Use -j 0 to restore the exact
+                   full-sweep refinement. Ignored when fast mode disables
+                   refinement.
     -k             No post-processing of the values of kappa based on the inferred
                    angular positions (theta) resulting in every vertices with the same
                    degree ending at the same radial position in the hyperbolic disk.
@@ -95,7 +99,7 @@ void parse_options(int argc , char *argv[], embeddingSD_t &the_graph)
   };
 
   int opt;
-  while ((opt = getopt_long(argc, argv, "ab:cfko:r:qs:vd:eM:TGCDN", long_options, nullptr)) != -1)
+  while ((opt = getopt_long(argc, argv, "ab:cfj:ko:r:qs:vd:eM:TGCDN", long_options, nullptr)) != -1)
   {
     switch(opt)
     {
@@ -114,6 +118,17 @@ void parse_options(int argc , char *argv[], embeddingSD_t &the_graph)
 
       case 'f':
         the_graph.MAXIMIZATION_MODE = false;
+        break;
+
+      case 'j':
+        the_graph.REFINE_NEGATIVE_SAMPLES = std::stoi(optarg);
+        if(the_graph.REFINE_NEGATIVE_SAMPLES < 0)
+        {
+          std::cerr << "Option -j requires a non-negative number of samples." << std::endl;
+          print_usage();
+          print_help();
+          std::exit(EXIT_FAILURE);
+        }
         break;
 
       case 'k':

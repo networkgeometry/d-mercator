@@ -171,4 +171,37 @@ if(BUILD_TESTING)
     target_link_libraries(likelihood_backend_smoke OpenMP::OpenMP_CXX)
   endif()
   add_test(NAME likelihood_backend_smoke COMMAND likelihood_backend_smoke)
+
+  add_executable(negative_sampling_cpu_smoke
+    tests/negative_sampling_cpu_smoke.cpp
+    ${gpu_embedding_sources}
+    ${include_files}
+  )
+  target_link_libraries(negative_sampling_cpu_smoke trapecis_Sd Threads::Threads)
+  if(D_MERCATOR_CUDA)
+    target_compile_definitions(negative_sampling_cpu_smoke PRIVATE DMERCATOR_USE_CUDA=1)
+    target_compile_options(negative_sampling_cpu_smoke PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false>)
+    target_link_libraries(negative_sampling_cpu_smoke CUDA::cudart)
+    set_target_properties(negative_sampling_cpu_smoke PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  endif()
+  if(OpenMP_CXX_FOUND)
+    target_link_libraries(negative_sampling_cpu_smoke OpenMP::OpenMP_CXX)
+  endif()
+  add_test(NAME negative_sampling_cpu_smoke COMMAND negative_sampling_cpu_smoke)
+
+  if(D_MERCATOR_CUDA)
+    add_executable(negative_sampling_backend_smoke
+      tests/negative_sampling_backend_smoke.cpp
+      ${gpu_embedding_sources}
+      ${include_files}
+    )
+    target_compile_definitions(negative_sampling_backend_smoke PRIVATE DMERCATOR_USE_CUDA=1)
+    target_compile_options(negative_sampling_backend_smoke PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false>)
+    target_link_libraries(negative_sampling_backend_smoke trapecis_Sd Threads::Threads CUDA::cudart)
+    set_target_properties(negative_sampling_backend_smoke PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    if(OpenMP_CXX_FOUND)
+      target_link_libraries(negative_sampling_backend_smoke OpenMP::OpenMP_CXX)
+    endif()
+    add_test(NAME negative_sampling_backend_smoke COMMAND negative_sampling_backend_smoke)
+  endif()
 endif()

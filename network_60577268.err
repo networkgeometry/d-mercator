@@ -51,3 +51,4 @@ Shell debugging restarted
 + case "${VALIDATION_MODE}" in
 + VALIDATION_FLAG=-v
 + /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda/embed_sd -d 1 -G -D -v -o /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/60577268/ppa_GC data/ogb/ogbl_ppa/raw/ppa_GC.edge
+/var/slurmd/spool/slurmd/job60577268/slurm_script: line 73: 2382840 Segmentation fault      (core dumped) "${CUDA_BUILD_DIR}/embed_sd" -d "${DIMENSION}" -G -D ${VALIDATION_FLAG} -o "${OUT_ROOT}" "${EDGE_PATH}"

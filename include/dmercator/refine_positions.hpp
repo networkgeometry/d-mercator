@@ -38,42 +38,254 @@ double embeddingSD_t::compute_pairwise_loglikelihood(int v1, double t1, int v2, 
     return -std::log(1 + std::pow(fraction, -beta));
   }
 }
+
+void embeddingSD_t::sample_negative_vertices(int v1, int sample_count, std::vector<int> &negative_vertices)
+{
+  negative_vertices.clear();
+  if(sample_count <= 0)
+  {
+    return;
+  }
+  if(scratch_sampling_marks.size() != static_cast<std::size_t>(nb_vertices))
+  {
+    scratch_sampling_marks.assign(nb_vertices, 0);
+    scratch_sampling_token = 1;
+  }
+  if(scratch_sampling_token == std::numeric_limits<int>::max())
+  {
+    std::fill(scratch_sampling_marks.begin(), scratch_sampling_marks.end(), 0);
+    scratch_sampling_token = 1;
+  }
+
+  const int token = scratch_sampling_token++;
+  scratch_sampling_marks[v1] = token;
+  const auto &neighbors_to_mark =
+    adjacency_flat_list.size() == static_cast<std::size_t>(nb_vertices) ? adjacency_flat_list[v1] : scratch_neighbors_int;
+  if(adjacency_flat_list.size() == static_cast<std::size_t>(nb_vertices))
+  {
+    for(const int neighbor : neighbors_to_mark)
+    {
+      scratch_sampling_marks[neighbor] = token;
+    }
+  }
+  else
+  {
+    for(const int neighbor : adjacency_list[v1])
+    {
+      scratch_sampling_marks[neighbor] = token;
+    }
+  }
+
+  negative_vertices.reserve(static_cast<std::size_t>(sample_count));
+  std::uniform_int_distribution<int> vertex_distribution(0, nb_vertices - 1);
+  while(static_cast<int>(negative_vertices.size()) < sample_count)
+  {
+    const int candidate = vertex_distribution(engine);
+    if(scratch_sampling_marks[candidate] == token)
+    {
+      continue;
+    }
+    scratch_sampling_marks[candidate] = token;
+    negative_vertices.push_back(candidate);
+  }
+}
+
+void embeddingSD_t::prepare_refinement_negatives(int v1,
+                                                 std::vector<int> &negative_vertices,
+                                                 double &negative_weight,
+                                                 bool &exact_negative_sweep)
+{
+  negative_vertices.clear();
+  negative_weight = 1.0;
+  exact_negative_sweep = true;
+
+  const int nb_negative_vertices = nb_vertices - 1 - degree[v1];
+  if(nb_negative_vertices <= 0)
+  {
+    return;
+  }
+  if(REFINE_NEGATIVE_SAMPLES <= 0)
+  {
+    return;
+  }
+
+  const int sampled_negative_count = std::min(REFINE_NEGATIVE_SAMPLES, nb_negative_vertices);
+  exact_negative_sweep = sampled_negative_count >= nb_negative_vertices;
+  if(exact_negative_sweep)
+  {
+    return;
+  }
+
+  sample_negative_vertices(v1, sampled_negative_count, negative_vertices);
+  if(sampled_negative_count > 0)
+  {
+    negative_weight = static_cast<double>(nb_negative_vertices) /
+                      static_cast<double>(sampled_negative_count);
+  }
+}
+
+double embeddingSD_t::score_refinement_candidate_1d(int v1,
+                                                    double candidate_angle,
+                                                    const std::vector<int> &neighbors,
+                                                    const std::vector<double> &pair_prefactor,
+                                                    const std::vector<int> &negative_vertices,
+                                                    double negative_weight,
+                                                    bool exact_negative_sweep)
+{
+  double total_loglikelihood = 0.0;
+  if(exact_negative_sweep)
+  {
+    for(int v2 = 0; v2 < nb_vertices; ++v2)
+    {
+      if(v2 == v1)
+      {
+        continue;
+      }
+      const double da = PI - std::fabs(PI - std::fabs(candidate_angle - theta[v2]));
+      const double fraction = pair_prefactor[v2] * da;
+      total_loglikelihood += -std::log(1 + std::pow(fraction, -beta));
+    }
+    for(const int v2 : neighbors)
+    {
+      const double da = PI - std::fabs(PI - std::fabs(candidate_angle - theta[v2]));
+      const double fraction = pair_prefactor[v2] * da;
+      total_loglikelihood += -beta * std::log(fraction);
+    }
+    return total_loglikelihood;
+  }
+
+  for(const int v2 : neighbors)
+  {
+    const double da = PI - std::fabs(PI - std::fabs(candidate_angle - theta[v2]));
+    const double fraction = pair_prefactor[v2] * da;
+    total_loglikelihood += -std::log(1 + std::pow(fraction, -beta));
+    total_loglikelihood += -beta * std::log(fraction);
+  }
+  if(!negative_vertices.empty())
+  {
+    double sampled_negative_loglikelihood = 0.0;
+    for(const int v2 : negative_vertices)
+    {
+      const double da = PI - std::fabs(PI - std::fabs(candidate_angle - theta[v2]));
+      const double fraction = pair_prefactor[v2] * da;
+      sampled_negative_loglikelihood += -std::log(1 + std::pow(fraction, -beta));
+    }
+    total_loglikelihood += negative_weight * sampled_negative_loglikelihood;
+  }
+  return total_loglikelihood;
+}
+
+double embeddingSD_t::score_refinement_candidate_dim(int dim,
+                                                     int v1,
+                                                     const double *candidate_position,
+                                                     const std::vector<int> &neighbors,
+                                                     const std::vector<double> &pair_prefactor,
+                                                     const std::vector<int> &negative_vertices,
+                                                     double negative_weight,
+                                                     bool exact_negative_sweep,
+                                                     int position_stride)
+{
+  (void)dim;
+  auto compute_angle_with_position = [&](const std::vector<double> &pos2) -> double
+  {
+    double angle = 0.0;
+    double norm1 = 0.0;
+    double norm2 = 0.0;
+    for(int i = 0; i < position_stride; ++i)
+    {
+      angle += candidate_position[i] * pos2[static_cast<std::size_t>(i)];
+      norm1 += candidate_position[i] * candidate_position[i];
+      norm2 += pos2[static_cast<std::size_t>(i)] * pos2[static_cast<std::size_t>(i)];
+    }
+    norm1 /= std::sqrt(norm1);
+    norm2 /= std::sqrt(norm2);
+    const double result = angle / (norm1 * norm2);
+    if(std::fabs(result - 1.0) < NUMERICAL_ZERO)
+    {
+      return 0.0;
+    }
+    return std::acos(result);
+  };
+
+  double total_loglikelihood = 0.0;
+  if(exact_negative_sweep)
+  {
+    for(int v2 = 0; v2 < nb_vertices; ++v2)
+    {
+      if(v2 == v1)
+      {
+        continue;
+      }
+      const double dtheta = compute_angle_with_position(d_positions[v2]);
+      const double chi = pair_prefactor[v2] * dtheta;
+      const double prob = 1.0 / (1.0 + std::pow(chi, beta));
+      total_loglikelihood += std::log(1.0 - prob);
+    }
+    for(const int v2 : neighbors)
+    {
+      const double dtheta = compute_angle_with_position(d_positions[v2]);
+      const double chi = pair_prefactor[v2] * dtheta;
+      const double prob = 1.0 / (1.0 + std::pow(chi, beta));
+      total_loglikelihood += std::log(prob);
+    }
+    return total_loglikelihood;
+  }
+
+  for(const int v2 : neighbors)
+  {
+    const double dtheta = compute_angle_with_position(d_positions[v2]);
+    const double chi = pair_prefactor[v2] * dtheta;
+    const double prob = 1.0 / (1.0 + std::pow(chi, beta));
+    total_loglikelihood += std::log(1.0 - prob);
+    total_loglikelihood += std::log(prob);
+  }
+  if(!negative_vertices.empty())
+  {
+    double sampled_negative_loglikelihood = 0.0;
+    for(const int v2 : negative_vertices)
+    {
+      const double dtheta = compute_angle_with_position(d_positions[v2]);
+      const double chi = pair_prefactor[v2] * dtheta;
+      const double prob = 1.0 / (1.0 + std::pow(chi, beta));
+      sampled_negative_loglikelihood += std::log(1.0 - prob);
+    }
+    total_loglikelihood += negative_weight * sampled_negative_loglikelihood;
+  }
+  return total_loglikelihood;
+}
+
 int embeddingSD_t::refine_angle(int v1)
 {
   if(!OPTIMIZED_PERF_MODE)
   {
     int has_moved = 0;
     double best_angle = theta[v1];
-    std::vector<int> neighbors(adjacency_list[v1].begin(), adjacency_list[v1].end());
+    auto &neighbors = scratch_neighbors_int;
+    neighbors.assign(adjacency_list[v1].begin(), adjacency_list[v1].end());
 
     const double prefactor = nb_vertices / (2 * PI * mu);
     const double prefactor_over_kappa_v1 = prefactor / kappa[v1];
-    std::vector<double> pair_prefactor(nb_vertices);
+    auto &pair_prefactor = scratch_pair_prefactor;
+    pair_prefactor.assign(nb_vertices, 0.0);
     for(int v2(0); v2<nb_vertices; ++v2)
     {
       pair_prefactor[v2] = prefactor_over_kappa_v1 / kappa[v2];
     }
 
+    auto &negative_vertices = scratch_negative_vertices;
+    double negative_weight = 1.0;
+    bool exact_negative_sweep = true;
+    prepare_refinement_negatives(v1, negative_vertices, negative_weight, exact_negative_sweep);
+
     auto compute_local_loglikelihood = [&](double angle) -> double
     {
-      double local_loglikelihood = 0;
-      for(int v2(0); v2<nb_vertices; ++v2)
-      {
-        if(v2 == v1)
-        {
-          continue;
-        }
-        const double da = PI - std::fabs(PI - std::fabs(angle - theta[v2]));
-        const double fraction = pair_prefactor[v2] * da;
-        local_loglikelihood += -std::log(1 + std::pow(fraction, -beta));
-      }
-      for(const int v2 : neighbors)
-      {
-        const double da = PI - std::fabs(PI - std::fabs(angle - theta[v2]));
-        const double fraction = pair_prefactor[v2] * da;
-        local_loglikelihood += -beta * std::log(fraction);
-      }
-      return local_loglikelihood;
+      return score_refinement_candidate_1d(v1,
+                                           angle,
+                                           neighbors,
+                                           pair_prefactor,
+                                           negative_vertices,
+                                           negative_weight,
+                                           exact_negative_sweep);
     };
 
     double best_loglikelihood = compute_local_loglikelihood(best_angle);
@@ -156,27 +368,21 @@ int embeddingSD_t::refine_angle(int v1)
     return scratch_pair_prefactor;
   };
 
+  auto &negative_vertices = scratch_negative_vertices;
+  double negative_weight = 1.0;
+  bool exact_negative_sweep = true;
+  prepare_refinement_negatives(v1, negative_vertices, negative_weight, exact_negative_sweep);
+
   auto compute_local_loglikelihood = [&](double angle) -> double
   {
     const auto &pair_prefactor = ensure_pair_prefactor();
-    double local_loglikelihood = 0;
-    for(int v2(0); v2<nb_vertices; ++v2)
-    {
-      if(v2 == v1)
-      {
-        continue;
-      }
-      const double da = PI - std::fabs(PI - std::fabs(angle - theta[v2]));
-      const double fraction = pair_prefactor[v2] * da;
-      local_loglikelihood += -std::log(1 + std::pow(fraction, -beta));
-    }
-    for(const int v2 : neighbors)
-    {
-      const double da = PI - std::fabs(PI - std::fabs(angle - theta[v2]));
-      const double fraction = pair_prefactor[v2] * da;
-      local_loglikelihood += -beta * std::log(fraction);
-    }
-    return local_loglikelihood;
+    return score_refinement_candidate_1d(v1,
+                                         angle,
+                                         neighbors,
+                                         pair_prefactor,
+                                         negative_vertices,
+                                         negative_weight,
+                                         exact_negative_sweep);
   };
 
   double da;
@@ -232,6 +438,9 @@ int embeddingSD_t::refine_angle(int v1)
                                                             prefactor,
                                                             beta,
                                                             candidate_angles,
+                                                            negative_vertices,
+                                                            negative_weight,
+                                                            exact_negative_sweep,
                                                             candidate_scores);
     if(!scored_on_gpu)
     {
@@ -288,10 +497,12 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
   {
     int has_moved = 0;
     auto best_position = d_positions[v1];
-    std::vector<int> neighbors(adjacency_list[v1].begin(), adjacency_list[v1].end());
+    auto &neighbors = scratch_neighbors_int;
+    neighbors.assign(adjacency_list[v1].begin(), adjacency_list[v1].end());
 
     const double inv_dim = 1.0 / static_cast<double>(dim);
-    std::vector<double> pair_prefactor(nb_vertices, 0);
+    auto &pair_prefactor = scratch_pair_prefactor;
+    pair_prefactor.assign(nb_vertices, 0.0);
     for(int v2(0); v2<nb_vertices; ++v2)
     {
       if(v2 == v1)
@@ -301,28 +512,22 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
       pair_prefactor[v2] = radius / std::pow(mu * kappa[v1] * kappa[v2], inv_dim);
     }
 
+    auto &negative_vertices = scratch_negative_vertices;
+    double negative_weight = 1.0;
+    bool exact_negative_sweep = true;
+    prepare_refinement_negatives(v1, negative_vertices, negative_weight, exact_negative_sweep);
+
     auto compute_local_loglikelihood = [&](const std::vector<double> &position) -> double
     {
-      double local_loglikelihood = 0;
-      for(int v2(0); v2<nb_vertices; ++v2)
-      {
-        if(v2 == v1)
-        {
-          continue;
-        }
-        const double dtheta = compute_angle_d_vectors(position, d_positions[v2]);
-        const double chi = pair_prefactor[v2] * dtheta;
-        const double prob = 1 / (1 + std::pow(chi, beta));
-        local_loglikelihood += std::log(1 - prob);
-      }
-      for(const int v2 : neighbors)
-      {
-        const double dtheta = compute_angle_d_vectors(position, d_positions[v2]);
-        const double chi = pair_prefactor[v2] * dtheta;
-        const double prob = 1 / (1 + std::pow(chi, beta));
-        local_loglikelihood += std::log(prob);
-      }
-      return local_loglikelihood;
+      return score_refinement_candidate_dim(dim,
+                                            v1,
+                                            position.data(),
+                                            neighbors,
+                                            pair_prefactor,
+                                            negative_vertices,
+                                            negative_weight,
+                                            exact_negative_sweep,
+                                            dim + 1);
     };
 
     double best_loglikelihood = compute_local_loglikelihood(best_position);
@@ -400,49 +605,23 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
     return scratch_pair_prefactor;
   };
 
-  auto compute_angle_with_position = [&](const double *pos1, const std::vector<double> &pos2) -> double
-  {
-    double angle = 0;
-    double norm1 = 0;
-    double norm2 = 0;
-    for(int i = 0; i < position_stride; ++i)
-    {
-      angle += pos1[i] * pos2[i];
-      norm1 += pos1[i] * pos1[i];
-      norm2 += pos2[i] * pos2[i];
-    }
-    norm1 /= std::sqrt(norm1);
-    norm2 /= std::sqrt(norm2);
-
-    const auto result = angle / (norm1 * norm2);
-    if(std::fabs(result - 1) < NUMERICAL_ZERO)
-      return 0;
-    return std::acos(result);
-  };
+  auto &negative_vertices = scratch_negative_vertices;
+  double negative_weight = 1.0;
+  bool exact_negative_sweep = true;
+  prepare_refinement_negatives(v1, negative_vertices, negative_weight, exact_negative_sweep);
 
   auto compute_local_loglikelihood = [&](const double *position_ptr) -> double
   {
     const auto &pair_prefactor = ensure_pair_prefactor();
-    double local_loglikelihood = 0;
-    for(int v2(0); v2<nb_vertices; ++v2)
-    {
-      if(v2 == v1)
-      {
-        continue;
-      }
-      const double dtheta = compute_angle_with_position(position_ptr, d_positions[v2]);
-      const double chi = pair_prefactor[v2] * dtheta;
-      const double prob = 1 / (1 + std::pow(chi, beta));
-      local_loglikelihood += std::log(1 - prob);
-    }
-    for(const int v2 : neighbors)
-    {
-      const double dtheta = compute_angle_with_position(position_ptr, d_positions[v2]);
-      const double chi = pair_prefactor[v2] * dtheta;
-      const double prob = 1 / (1 + std::pow(chi, beta));
-      local_loglikelihood += std::log(prob);
-    }
-    return local_loglikelihood;
+    return score_refinement_candidate_dim(dim,
+                                          v1,
+                                          position_ptr,
+                                          neighbors,
+                                          pair_prefactor,
+                                          negative_vertices,
+                                          negative_weight,
+                                          exact_negative_sweep,
+                                          position_stride);
   };
 
   if(scratch_mean_vector.size() != static_cast<size_t>(position_stride))
@@ -517,6 +696,9 @@ int embeddingSD_t::refine_angle(int dim, int v1, double radius)
                                                             beta,
                                                             NUMERICAL_ZERO,
                                                             candidate_positions_soa,
+                                                            negative_vertices,
+                                                            negative_weight,
+                                                            exact_negative_sweep,
                                                             candidate_scores);
     if(!scored_on_gpu)
     {
@@ -575,6 +757,18 @@ void embeddingSD_t::refine_positions(int dim)
 {
   if(!QUIET_MODE) { std::clog << "Refining the positions..."; }
   if(!QUIET_MODE) { std::clog << std::endl; }
+  if(!QUIET_MODE)
+  {
+    if(REFINE_NEGATIVE_SAMPLES > 0)
+    {
+      std::clog << TAB << "Using " << REFINE_NEGATIVE_SAMPLES
+                << " sampled non-neighbors per vertex when scoring proposals." << std::endl;
+    }
+    else
+    {
+      std::clog << TAB << "Using exact full-sweep refinement scoring." << std::endl;
+    }
+  }
 
   CUDA_REFINEMENT_ACTIVE = false;
 

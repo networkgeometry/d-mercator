@@ -28,11 +28,14 @@ CPU_BUILD_DIR="${CPU_BUILD_DIR:-${REPO_ROOT}/build_cpu}"
 CUDA_BUILD_DIR="${CUDA_BUILD_DIR:-${REPO_ROOT}/build_cuda}"
 RESULTS_DIR="${RESULTS_DIR:-${REPO_ROOT}/benchmark_runs/${SLURM_JOB_ID}}"
 
-SIZES="${SIZES:-1000,2000,5000,10000,20000,50000}"
-DIMENSION="${DIMENSION:-1}"
-REPS="${REPS:-1}"
-SEED="${SEED:-12345}"
-BETA="${BETA:-2}"
+SIZES="${SIZES:-1000,2000,5000,10000}"
+DIMENSION="${DIMENSION:-1,2}"
+SAMPLE_COUNTS="${SAMPLE_COUNTS:-16,64,256}"
+SEED="${SEED:-42}"
+GAMMA="${GAMMA:-2.5}"
+MEAN_DEGREE="${MEAN_DEGREE:-10.0}"
+QUALITY_SIZE_LIMIT="${QUALITY_SIZE_LIMIT:-10000}"
+RUN_TOPOLOGY="${RUN_TOPOLOGY:-1}"
 
 export OMP_NUM_THREADS="${OMP_NUM_THREADS:-$THREADS}"
 
@@ -50,13 +53,32 @@ cmake --build "${CUDA_BUILD_DIR}" -j "${THREADS}"
 
 mkdir -p "${RESULTS_DIR}"
 
-python3 "${REPO_ROOT}/python/benchmark_cpu_gpu.py" \
+BENCH_DIR="${RESULTS_DIR}/benchmark"
+TOPOLOGY_DIR="${RESULTS_DIR}/topology"
+
+python3 "${REPO_ROOT}/python/benchmark_negative_sampling_cpu_gpu.py" \
   --cpu-build-dir "${CPU_BUILD_DIR}" \
   --gpu-build-dir "${CUDA_BUILD_DIR}" \
-  --out-dir "${RESULTS_DIR}" \
+  --generator-build-dir "${CPU_BUILD_DIR}" \
+  --out-dir "${BENCH_DIR}" \
   --sizes "${SIZES}" \
-  --dimension "${DIMENSION}" \
-  --reps "${REPS}" \
+  --dimensions "${DIMENSION}" \
+  --sample-counts "${SAMPLE_COUNTS}" \
   --seed "${SEED}" \
-  --beta "${BETA}" \
+  --beta-mode two-times-dim \
+  --gamma "${GAMMA}" \
+  --mean-degree "${MEAN_DEGREE}" \
+  --quality-size-limit "${QUALITY_SIZE_LIMIT}" \
   --omp-threads "${OMP_NUM_THREADS}"
+
+case "${RUN_TOPOLOGY}" in
+  1|true|TRUE|yes|YES|y|Y)
+    python3 "${REPO_ROOT}/python/topology_from_embeddings.py" \
+      --benchmark-json "${BENCH_DIR}/negative_sampling_cpu_gpu.json" \
+      --generator-binary "${CPU_BUILD_DIR}/generate_sd" \
+      --output-dir "${TOPOLOGY_DIR}" \
+      --size-limit "${QUALITY_SIZE_LIMIT}"
+    ;;
+  *)
+    ;;
+esac

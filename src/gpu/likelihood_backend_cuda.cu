@@ -412,6 +412,9 @@ class CudaLikelihoodBackend final : public LikelihoodBackend
                              double prefactor,
                              double beta,
                              const std::vector<double> &candidate_theta,
+                             const std::vector<int> &negative_vertices,
+                             double negative_weight,
+                             bool exact_negative_sweep,
                              std::vector<double> &out_scores) override
     {
       if(!check_initialized("score_candidates_s1"))
@@ -434,8 +437,14 @@ class CudaLikelihoodBackend final : public LikelihoodBackend
         out_scores.clear();
         return true;
       }
+      if(!exact_negative_sweep && negative_vertices.empty())
+      {
+        set_error("score_candidates_s1 sampled mode requires at least one negative vertex.");
+        return false;
+      }
 
       if(!d_candidate_theta_.ensure(static_cast<std::size_t>(nb_candidates), last_error_, "d_candidate_theta") ||
+         !d_negative_vertices_.ensure(negative_vertices.size(), last_error_, "d_negative_vertices") ||
          !d_scores_.ensure(static_cast<std::size_t>(nb_candidates), last_error_, "d_scores") ||
          !h_scores_.ensure(static_cast<std::size_t>(nb_candidates), last_error_, "h_scores"))
       {
@@ -451,6 +460,18 @@ class CudaLikelihoodBackend final : public LikelihoodBackend
       {
         return false;
       }
+      if(!negative_vertices.empty())
+      {
+        if(!check_cuda(cudaMemcpyAsync(d_negative_vertices_.ptr,
+                                       negative_vertices.data(),
+                                       negative_vertices.size() * sizeof(int),
+                                       cudaMemcpyHostToDevice,
+                                       stream_),
+                       "cudaMemcpyAsync(negative_vertices_s1)"))
+        {
+          return false;
+        }
+      }
 
       kernels::launch_score_candidates_s1(d_theta_.ptr,
                                           d_kappa_.ptr,
@@ -462,6 +483,10 @@ class CudaLikelihoodBackend final : public LikelihoodBackend
                                           beta,
                                           d_candidate_theta_.ptr,
                                           nb_candidates,
+                                          d_negative_vertices_.ptr,
+                                          static_cast<int>(negative_vertices.size()),
+                                          negative_weight,
+                                          exact_negative_sweep,
                                           d_scores_.ptr,
                                           stream_);
       if(!check_kernel("launch_score_candidates_s1"))
@@ -494,6 +519,9 @@ class CudaLikelihoodBackend final : public LikelihoodBackend
                              double beta,
                              double numerical_zero,
                              const std::vector<double> &candidate_positions_soa,
+                             const std::vector<int> &negative_vertices,
+                             double negative_weight,
+                             bool exact_negative_sweep,
                              std::vector<double> &out_scores) override
     {
       if(!check_initialized("score_candidates_sd"))
@@ -530,9 +558,15 @@ class CudaLikelihoodBackend final : public LikelihoodBackend
         set_error("score_candidates_sd candidate buffer shape is invalid.");
         return false;
       }
+      if(!exact_negative_sweep && negative_vertices.empty())
+      {
+        set_error("score_candidates_sd sampled mode requires at least one negative vertex.");
+        return false;
+      }
 
       const int nb_candidates = static_cast<int>(candidate_positions_soa.size() / static_cast<std::size_t>(dim_plus_one_));
       if(!d_candidate_positions_soa_.ensure(candidate_positions_soa.size(), last_error_, "d_candidate_positions_soa") ||
+         !d_negative_vertices_.ensure(negative_vertices.size(), last_error_, "d_negative_vertices") ||
          !d_scores_.ensure(static_cast<std::size_t>(nb_candidates), last_error_, "d_scores") ||
          !h_scores_.ensure(static_cast<std::size_t>(nb_candidates), last_error_, "h_scores"))
       {
@@ -548,6 +582,18 @@ class CudaLikelihoodBackend final : public LikelihoodBackend
       {
         return false;
       }
+      if(!negative_vertices.empty())
+      {
+        if(!check_cuda(cudaMemcpyAsync(d_negative_vertices_.ptr,
+                                       negative_vertices.data(),
+                                       negative_vertices.size() * sizeof(int),
+                                       cudaMemcpyHostToDevice,
+                                       stream_),
+                       "cudaMemcpyAsync(negative_vertices_sd)"))
+        {
+          return false;
+        }
+      }
 
       kernels::launch_score_candidates_sd(d_positions_soa_.ptr,
                                           dim_plus_one_,
@@ -562,6 +608,10 @@ class CudaLikelihoodBackend final : public LikelihoodBackend
                                           numerical_zero,
                                           d_candidate_positions_soa_.ptr,
                                           nb_candidates,
+                                          d_negative_vertices_.ptr,
+                                          static_cast<int>(negative_vertices.size()),
+                                          negative_weight,
+                                          exact_negative_sweep,
                                           d_scores_.ptr,
                                           stream_);
       if(!check_kernel("launch_score_candidates_sd"))
@@ -745,6 +795,7 @@ class CudaLikelihoodBackend final : public LikelihoodBackend
       d_expected_.release();
       d_candidate_theta_.release();
       d_candidate_positions_soa_.release();
+      d_negative_vertices_.release();
       d_scores_.release();
       h_scores_.release();
       h_expected_.release();
@@ -788,6 +839,7 @@ class CudaLikelihoodBackend final : public LikelihoodBackend
 
     DeviceBuffer<double> d_candidate_theta_;
     DeviceBuffer<double> d_candidate_positions_soa_;
+    DeviceBuffer<int> d_negative_vertices_;
     DeviceBuffer<double> d_scores_;
 
     HostPinnedBuffer<double> h_scores_;

@@ -1,0 +1,448 @@
++ module load gcc/12.2.0-fasrc01
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_sh_dbg=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output
+Shell debugging restarted
++ unset __lmod_sh_dbg
++ return 0
++ module load cmake
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_sh_dbg=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output
+Shell debugging restarted
++ unset __lmod_sh_dbg
++ return 0
++ module load cuda/12.9.1-fasrc01
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_sh_dbg=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output
+Shell debugging restarted
++ unset __lmod_sh_dbg
++ return 0
++ module load python/3.10.12-fasrc01
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_sh_dbg=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output
+Shell debugging restarted
++ unset __lmod_sh_dbg
++ return 0
++ source activate pt2.3.0_cuda12.1
+++ _CONDA_ROOT=/n/sw/Mambaforge-23.3.1-1
+++ . /n/sw/Mambaforge-23.3.1-1/etc/profile.d/conda.sh
++++ export CONDA_EXE=/n/sw/Mambaforge-23.3.1-1/bin/conda
++++ CONDA_EXE=/n/sw/Mambaforge-23.3.1-1/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/n/sw/Mambaforge-23.3.1-1/bin/python
++++ CONDA_PYTHON_EXE=/n/sw/Mambaforge-23.3.1-1/bin/python
++++ '[' -z x ']'
+++ conda activate pt2.3.0_cuda12.1
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate pt2.3.0_cuda12.1
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate pt2.3.0_cuda12.1
++++ /n/sw/Mambaforge-23.3.1-1/bin/conda shell.posix activate pt2.3.0_cuda12.1
+++ ask_conda='PS1='\''(pt2.3.0_cuda12.1) '\''
+export PATH='\''/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/bin:/n/sw/Mambaforge-23.3.1-1/condabin:/n/sw/Mambaforge-23.3.1-1/bin:/n/sw/helmod-rocky8/apps/Core/cuda/12.9.1-fasrc01/cuda/bin:/n/sw/helmod-rocky8/apps/Core/cmake/4.2.3-fasrc01/bin:/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/bin:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/n/home10/rjankowski/.vscode-server/cli/servers/Stable-ce099c1ed25d9eb3076c11e4a280f3eb52b4fbeb/server/bin/remote-cli:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/mellanox/doca/tools:/opt/puppetlabs/bin'\''
+export CONDA_PREFIX='\''/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''pt2.3.0_cuda12.1'\''
+export CONDA_PROMPT_MODIFIER='\''(pt2.3.0_cuda12.1) '\''
+export CONDA_EXE='\''/n/sw/Mambaforge-23.3.1-1/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/n/sw/Mambaforge-23.3.1-1/bin/python'\''
+. "/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/conda/activate.d/libglib_activate.sh"
+. "/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/conda/activate.d/libxml2_activate.sh"'
+++ eval 'PS1='\''(pt2.3.0_cuda12.1) '\''
+export PATH='\''/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/bin:/n/sw/Mambaforge-23.3.1-1/condabin:/n/sw/Mambaforge-23.3.1-1/bin:/n/sw/helmod-rocky8/apps/Core/cuda/12.9.1-fasrc01/cuda/bin:/n/sw/helmod-rocky8/apps/Core/cmake/4.2.3-fasrc01/bin:/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/bin:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/n/home10/rjankowski/.vscode-server/cli/servers/Stable-ce099c1ed25d9eb3076c11e4a280f3eb52b4fbeb/server/bin/remote-cli:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/mellanox/doca/tools:/opt/puppetlabs/bin'\''
+export CONDA_PREFIX='\''/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''pt2.3.0_cuda12.1'\''
+export CONDA_PROMPT_MODIFIER='\''(pt2.3.0_cuda12.1) '\''
+export CONDA_EXE='\''/n/sw/Mambaforge-23.3.1-1/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/n/sw/Mambaforge-23.3.1-1/bin/python'\''
+. "/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/conda/activate.d/libglib_activate.sh"
+. "/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/conda/activate.d/libxml2_activate.sh"'
++++ PS1='(pt2.3.0_cuda12.1) '
++++ export PATH=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/bin:/n/sw/Mambaforge-23.3.1-1/condabin:/n/sw/Mambaforge-23.3.1-1/bin:/n/sw/helmod-rocky8/apps/Core/cuda/12.9.1-fasrc01/cuda/bin:/n/sw/helmod-rocky8/apps/Core/cmake/4.2.3-fasrc01/bin:/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/bin:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/n/home10/rjankowski/.vscode-server/cli/servers/Stable-ce099c1ed25d9eb3076c11e4a280f3eb52b4fbeb/server/bin/remote-cli:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/mellanox/doca/tools:/opt/puppetlabs/bin
++++ PATH=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/bin:/n/sw/Mambaforge-23.3.1-1/condabin:/n/sw/Mambaforge-23.3.1-1/bin:/n/sw/helmod-rocky8/apps/Core/cuda/12.9.1-fasrc01/cuda/bin:/n/sw/helmod-rocky8/apps/Core/cmake/4.2.3-fasrc01/bin:/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/bin:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/n/home10/rjankowski/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/n/home10/rjankowski/.vscode-server/cli/servers/Stable-ce099c1ed25d9eb3076c11e4a280f3eb52b4fbeb/server/bin/remote-cli:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/mellanox/doca/tools:/opt/puppetlabs/bin
++++ export CONDA_PREFIX=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1
++++ CONDA_PREFIX=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=pt2.3.0_cuda12.1
++++ CONDA_DEFAULT_ENV=pt2.3.0_cuda12.1
++++ export 'CONDA_PROMPT_MODIFIER=(pt2.3.0_cuda12.1) '
++++ CONDA_PROMPT_MODIFIER='(pt2.3.0_cuda12.1) '
++++ export CONDA_EXE=/n/sw/Mambaforge-23.3.1-1/bin/conda
++++ CONDA_EXE=/n/sw/Mambaforge-23.3.1-1/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/n/sw/Mambaforge-23.3.1-1/bin/python
++++ CONDA_PYTHON_EXE=/n/sw/Mambaforge-23.3.1-1/bin/python
++++ . /n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/conda/activate.d/libglib_activate.sh
+++++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
+++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
+++++ export GSETTINGS_SCHEMA_DIR=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/share/glib-2.0/schemas
+++++ GSETTINGS_SCHEMA_DIR=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/share/glib-2.0/schemas
++++ . /n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/conda/activate.d/libxml2_activate.sh
+++++ test -n ''
+++++ xml_catalog_files_libxml2=
+++++ XML_CATALOG_FILES=
+++++ conda_catalog_files=
+++++ ifs_libxml2=' 	
+'
+++++ IFS=' '
+++++ rem=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1
+++++ for pre in ${rem}
+++++ test '' = /n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1
+++++ conda_catalog_files=/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1
+++++ rem=
+++++ IFS=' 	
+'
+++++ conda_catalog_files='file:///n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/xml/catalog file:///etc/xml/catalog'
+++++ export 'XML_CATALOG_FILES=file:///n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/xml/catalog file:///etc/xml/catalog'
+++++ XML_CATALOG_FILES='file:///n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/etc/xml/catalog file:///etc/xml/catalog'
+++++ unset conda_catalog_files ifs_libxml2 rem
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ nvidia-smi
++ REPO_ROOT=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator
++ THREADS=8
++ CPU_BUILD_DIR=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cpu
++ CUDA_BUILD_DIR=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda
++ RESULTS_DIR=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/66176271
++ SIZES=1000,2000,5000,10000
++ DIMENSION=1
++ SAMPLE_COUNTS=16,64,256
++ SEED=17
++ GAMMA=2.5
++ MEAN_DEGREE=10.0
++ QUALITY_SIZE_LIMIT=10000
++ RUN_TOPOLOGY=1
++ export OMP_NUM_THREADS=1
++ OMP_NUM_THREADS=1
++ cmake -S /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator -B /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cpu -DCMAKE_BUILD_TYPE=Release -DDMERCATOR_RELEASE_O3=ON -DUSE_CUDA=OFF
++ cmake --build /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cpu -j 8
+In file included from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/Core:405,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/apps/../include/legacy/embeddingSD_legacy.hpp:54,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/apps/../include/legacy/embeddingSD_unix_legacy.hpp:36,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/apps/mercator_legacy.cpp:1:
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:87:28: warning: ‘template<class _Predicate> class std::unary_negate’ is deprecated [-Wdeprecated-declarations]
+   87 | struct functor_traits<std::unary_negate<T> >
+      |                            ^~~~~~~~~~~~
+In file included from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/string:48,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/locale_classes.h:40,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/ios_base.h:41,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ios:42,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ostream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/iostream:39,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/apps/../include/legacy/embeddingSD_unix_legacy.hpp:31:
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1024:33: note: declared here
+ 1024 |     class _GLIBCXX17_DEPRECATED unary_negate
+      |                                 ^~~~~~~~~~~~
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:91:28: warning: ‘template<class _Predicate> class std::binary_negate’ is deprecated [-Wdeprecated-declarations]
+   91 | struct functor_traits<std::binary_negate<T> >
+      |                            ^~~~~~~~~~~~~
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1051:33: note: declared here
+ 1051 |     class _GLIBCXX17_DEPRECATED binary_negate
+      |                                 ^~~~~~~~~~~~~
+In file included from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/Core:405,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/dmercator/engine.hpp:25,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/embeddingSD.hpp:4,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/tests/perf_preservation_smoke.cpp:1:
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:87:28: warning: ‘template<class _Predicate> class std::unary_negate’ is deprecated [-Wdeprecated-declarations]
+   87 | struct functor_traits<std::unary_negate<T> >
+      |                            ^~~~~~~~~~~~
+In file included from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/string:48,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/locale_classes.h:40,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/ios_base.h:41,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ios:42,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/istream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/sstream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/complex:45,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/dmercator/engine.hpp:8:
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1024:33: note: declared here
+ 1024 |     class _GLIBCXX17_DEPRECATED unary_negate
+      |                                 ^~~~~~~~~~~~
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:91:28: warning: ‘template<class _Predicate> class std::binary_negate’ is deprecated [-Wdeprecated-declarations]
+   91 | struct functor_traits<std::binary_negate<T> >
+      |                            ^~~~~~~~~~~~~
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1051:33: note: declared here
+ 1051 |     class _GLIBCXX17_DEPRECATED binary_negate
+      |                                 ^~~~~~~~~~~~~
+In file included from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/Core:405,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/../include/dmercator/engine.hpp:25,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/../include/embeddingSD.hpp:4,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/../include/embeddingSD_unix.hpp:10,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/embeddingSD_unix.cpp:30:
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:87:28: warning: ‘template<class _Predicate> class std::unary_negate’ is deprecated [-Wdeprecated-declarations]
+   87 | struct functor_traits<std::unary_negate<T> >
+      |                            ^~~~~~~~~~~~
+In file included from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/string:48,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/locale_classes.h:40,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/ios_base.h:41,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ios:42,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ostream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/iostream:39,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/../include/embeddingSD_unix.hpp:7:
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1024:33: note: declared here
+ 1024 |     class _GLIBCXX17_DEPRECATED unary_negate
+      |                                 ^~~~~~~~~~~~
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:91:28: warning: ‘template<class _Predicate> class std::binary_negate’ is deprecated [-Wdeprecated-declarations]
+   91 | struct functor_traits<std::binary_negate<T> >
+      |                            ^~~~~~~~~~~~~
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1051:33: note: declared here
+ 1051 |     class _GLIBCXX17_DEPRECATED binary_negate
+      |                                 ^~~~~~~~~~~~~
+In file included from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/Core:405,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/dmercator/engine.hpp:25,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/embeddingSD.hpp:4,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/tests/negative_sampling_cpu_smoke.cpp:1:
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:87:28: warning: ‘template<class _Predicate> class std::unary_negate’ is deprecated [-Wdeprecated-declarations]
+   87 | struct functor_traits<std::unary_negate<T> >
+      |                            ^~~~~~~~~~~~
+In file included from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/Core:405,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/dmercator/embedding/../../../include/dmercator/engine.hpp:25,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/dmercator/embedding/../../../include/embeddingSD.hpp:4,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/dmercator/embedding/../../../include/embeddingSD_unix.hpp:10,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/dmercator/embedding/embedder.cpp:4:
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:87:28: warning: ‘template<class _Predicate> class std::unary_negate’ is deprecated [-Wdeprecated-declarations]
+   87 | struct functor_traits<std::unary_negate<T> >
+      |                            ^~~~~~~~~~~~
+In file included from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/string:48,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/locale_classes.h:40,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/ios_base.h:41,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ios:42,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/istream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/sstream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/complex:45,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/dmercator/engine.hpp:8:
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1024:33: note: declared here
+ 1024 |     class _GLIBCXX17_DEPRECATED unary_negate
+      |                                 ^~~~~~~~~~~~
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:91:28: warning: ‘template<class _Predicate> class std::binary_negate’ is deprecated [-Wdeprecated-declarations]
+   91 | struct functor_traits<std::binary_negate<T> >
+      |                            ^~~~~~~~~~~~~
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1051:33: note: declared here
+ 1051 |     class _GLIBCXX17_DEPRECATED binary_negate
+      |                                 ^~~~~~~~~~~~~
+In file included from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/string:48,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/locale_classes.h:40,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/ios_base.h:41,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ios:42,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/istream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/fstream:38,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/dmercator/embedding/../../../include/dmercator/io/coordinates_csv.hpp:6,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/dmercator/embedding/embedder.cpp:3:
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1024:33: note: declared here
+ 1024 |     class _GLIBCXX17_DEPRECATED unary_negate
+      |                                 ^~~~~~~~~~~~
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:91:28: warning: ‘template<class _Predicate> class std::binary_negate’ is deprecated [-Wdeprecated-declarations]
+   91 | struct functor_traits<std::binary_negate<T> >
+      |                            ^~~~~~~~~~~~~
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1051:33: note: declared here
+ 1051 |     class _GLIBCXX17_DEPRECATED binary_negate
+      |                                 ^~~~~~~~~~~~~
++ cmake -S /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator -B /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda -DCMAKE_BUILD_TYPE=Release -DDMERCATOR_RELEASE_O3=ON -DUSE_CUDA=ON
++ cmake --build /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda -j 8
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+In file included from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/Core:405,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/dmercator/engine.hpp:25,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/embeddingSD.hpp:4,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/tests/negative_sampling_cpu_smoke.cpp:1:
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:87:28: warning: ‘template<class _Predicate> class std::unary_negate’ is deprecated [-Wdeprecated-declarations]
+   87 | struct functor_traits<std::unary_negate<T> >
+      |                            ^~~~~~~~~~~~
+In file included from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/string:48,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/locale_classes.h:40,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/ios_base.h:41,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ios:42,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/istream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/sstream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/complex:45,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/dmercator/engine.hpp:8:
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1024:33: note: declared here
+ 1024 |     class _GLIBCXX17_DEPRECATED unary_negate
+      |                                 ^~~~~~~~~~~~
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:91:28: warning: ‘template<class _Predicate> class std::binary_negate’ is deprecated [-Wdeprecated-declarations]
+   91 | struct functor_traits<std::binary_negate<T> >
+      |                            ^~~~~~~~~~~~~
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1051:33: note: declared here
+ 1051 |     class _GLIBCXX17_DEPRECATED binary_negate
+      |                                 ^~~~~~~~~~~~~
+In file included from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/Core:405,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/../include/dmercator/engine.hpp:25,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/../include/embeddingSD.hpp:4,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/../include/embeddingSD_unix.hpp:10,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/embeddingSD_unix.cpp:30:
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:87:28: warning: ‘template<class _Predicate> class std::unary_negate’ is deprecated [-Wdeprecated-declarations]
+   87 | struct functor_traits<std::unary_negate<T> >
+      |                            ^~~~~~~~~~~~
+In file included from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/string:48,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/locale_classes.h:40,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/ios_base.h:41,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ios:42,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ostream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/iostream:39,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/../include/embeddingSD_unix.hpp:7:
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1024:33: note: declared here
+ 1024 |     class _GLIBCXX17_DEPRECATED unary_negate
+      |                                 ^~~~~~~~~~~~
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:91:28: warning: ‘template<class _Predicate> class std::binary_negate’ is deprecated [-Wdeprecated-declarations]
+   91 | struct functor_traits<std::binary_negate<T> >
+      |                            ^~~~~~~~~~~~~
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1051:33: note: declared here
+ 1051 |     class _GLIBCXX17_DEPRECATED binary_negate
+      |                                 ^~~~~~~~~~~~~
+In file included from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/Core:405,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/apps/../include/legacy/embeddingSD_legacy.hpp:54,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/apps/../include/legacy/embeddingSD_unix_legacy.hpp:36,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/apps/mercator_legacy.cpp:1:
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:87:28: warning: ‘template<class _Predicate> class std::unary_negate’ is deprecated [-Wdeprecated-declarations]
+   87 | struct functor_traits<std::unary_negate<T> >
+      |                            ^~~~~~~~~~~~
+In file included from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/string:48,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/locale_classes.h:40,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/ios_base.h:41,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ios:42,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ostream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/iostream:39,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/apps/../include/legacy/embeddingSD_unix_legacy.hpp:31:
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1024:33: note: declared here
+ 1024 |     class _GLIBCXX17_DEPRECATED unary_negate
+      |                                 ^~~~~~~~~~~~
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:91:28: warning: ‘template<class _Predicate> class std::binary_negate’ is deprecated [-Wdeprecated-declarations]
+   91 | struct functor_traits<std::binary_negate<T> >
+      |                            ^~~~~~~~~~~~~
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1051:33: note: declared here
+ 1051 |     class _GLIBCXX17_DEPRECATED binary_negate
+      |                                 ^~~~~~~~~~~~~
+In file included from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/Core:405,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/dmercator/engine.hpp:25,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/embeddingSD.hpp:4,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/tests/perf_preservation_smoke.cpp:1:
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:87:28: warning: ‘template<class _Predicate> class std::unary_negate’ is deprecated [-Wdeprecated-declarations]
+   87 | struct functor_traits<std::unary_negate<T> >
+      |                            ^~~~~~~~~~~~
+In file included from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/string:48,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/locale_classes.h:40,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/ios_base.h:41,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ios:42,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/istream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/sstream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/complex:45,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/dmercator/engine.hpp:8:
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1024:33: note: declared here
+ 1024 |     class _GLIBCXX17_DEPRECATED unary_negate
+      |                                 ^~~~~~~~~~~~
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:91:28: warning: ‘template<class _Predicate> class std::binary_negate’ is deprecated [-Wdeprecated-declarations]
+   91 | struct functor_traits<std::binary_negate<T> >
+      |                            ^~~~~~~~~~~~~
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1051:33: note: declared here
+ 1051 |     class _GLIBCXX17_DEPRECATED binary_negate
+      |                                 ^~~~~~~~~~~~~
+In file included from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/Core:405,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/dmercator/embedding/../../../include/dmercator/engine.hpp:25,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/dmercator/embedding/../../../include/embeddingSD.hpp:4,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/dmercator/embedding/../../../include/embeddingSD_unix.hpp:10,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/dmercator/embedding/embedder.cpp:4:
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:87:28: warning: ‘template<class _Predicate> class std::unary_negate’ is deprecated [-Wdeprecated-declarations]
+   87 | struct functor_traits<std::unary_negate<T> >
+      |                            ^~~~~~~~~~~~
+In file included from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/string:48,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/locale_classes.h:40,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/ios_base.h:41,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/ios:42,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/istream:38,
+                 from /n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/fstream:38,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/dmercator/embedding/../../../include/dmercator/io/coordinates_csv.hpp:6,
+                 from /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/dmercator/embedding/embedder.cpp:3:
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1024:33: note: declared here
+ 1024 |     class _GLIBCXX17_DEPRECATED unary_negate
+      |                                 ^~~~~~~~~~~~
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/include/Eigen/src/Core/functors/StlFunctors.h:91:28: warning: ‘template<class _Predicate> class std::binary_negate’ is deprecated [-Wdeprecated-declarations]
+   91 | struct functor_traits<std::binary_negate<T> >
+      |                            ^~~~~~~~~~~~~
+/n/sw/helmod-rocky8/apps/Core/gcc/12.2.0-fasrc01/include/c++/12.2.0/bits/stl_function.h:1051:33: note: declared here
+ 1051 |     class _GLIBCXX17_DEPRECATED binary_negate
+      |                                 ^~~~~~~~~~~~~
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/gpu/gpu_context.cu(138): warning #177-D: function "dmercator::gpu::<unnamed>::Context::release" was declared but never referenced
+    void release()
+         ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/src/gpu/gpu_context.cu(138): warning #177-D: function "dmercator::gpu::<unnamed>::Context::release" was declared but never referenced
+    void release()
+         ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
++ mkdir -p /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/66176271
++ BENCH_DIR=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/66176271/benchmark
++ TOPOLOGY_DIR=/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/66176271/topology
++ python3 /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/python/benchmark_negative_sampling_cpu_gpu.py --cpu-build-dir /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cpu --gpu-build-dir /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cuda --generator-build-dir /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/build_cpu --out-dir /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/66176271/benchmark --sizes 1000,2000,5000,10000 --dimensions 1 --sample-counts 16,64,256 --seed 17 --beta-mode two-times-dim --gamma 2.5 --mean-degree 10.0 --quality-size-limit 10000 --omp-threads 1
+Convergence reached after 16 iterations.
+Machine-readable ground truth saved to /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/66176271/benchmark/artifacts/d1_n1000_seed1001017/synthetic_sd.truth.csv
+Convergence reached after 13 iterations.
+Machine-readable ground truth saved to /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/66176271/benchmark/artifacts/d1_n2000_seed1002017/synthetic_sd.truth.csv
+Convergence reached after 16 iterations.
+Machine-readable ground truth saved to /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/66176271/benchmark/artifacts/d1_n5000_seed1005017/synthetic_sd.truth.csv
+Convergence reached after 21 iterations.
+Machine-readable ground truth saved to /n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/benchmark_runs/66176271/benchmark/artifacts/d1_n10000_seed1010017/synthetic_sd.truth.csv
+Traceback (most recent call last):
+  File "/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/python/benchmark_negative_sampling_cpu_gpu.py", line 671, in <module>
+    raise SystemExit(main())
+  File "/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/python/benchmark_negative_sampling_cpu_gpu.py", line 662, in main
+    plot_metric(records, [2], out_dir / "aligned_coord_corr_vs_n_d2.png", "aligned_coord_corr", "Aligned Coordinate Correlation vs System Size", "aligned_coord_corr", include_only_with_metric=True)
+  File "/n/holylabs/mweber_lab/Everyone/rjankowski/repo/d-mercator/python/benchmark_negative_sampling_cpu_gpu.py", line 481, in plot_metric
+    fig.legend(handles, labels, loc="upper center", ncol=min(4, len(labels)))
+  File "/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/lib/python3.10/site-packages/matplotlib/figure.py", line 1137, in legend
+    l = mlegend.Legend(self, handles, labels, **kwargs)
+  File "/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/lib/python3.10/site-packages/matplotlib/legend.py", line 550, in __init__
+    self._init_legend_box(handles, labels, markerfirst)
+  File "/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/lib/python3.10/site-packages/matplotlib/legend.py", line 907, in _init_legend_box
+    len, np.array_split(handles_and_labels, self._ncols)):
+  File "/n/home10/rjankowski/.conda/envs/pt2.3.0_cuda12.1/lib/python3.10/site-packages/numpy/lib/_shape_base_impl.py", line 782, in array_split
+    raise ValueError('number sections must be larger than 0.') from None
+ValueError: number sections must be larger than 0.

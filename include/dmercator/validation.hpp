@@ -561,6 +561,7 @@ void embeddingSD_t::save_inferred_coordinates(int dim)
     coordinates_file << "# " << TAB << "NUMERICAL_ZERO                         " << NUMERICAL_ZERO                                   << std::endl;
     coordinates_file << "# " << TAB << "QUIET_MODE                             " << (QUIET_MODE                  ? "true" : "false") << std::endl;
     coordinates_file << "# " << TAB << "REFINE_MODE                            " << (REFINE_MODE                 ? "true" : "false") << std::endl;
+    coordinates_file << "# " << TAB << "REFINE_NEGATIVE_SAMPLES                " << REFINE_NEGATIVE_SAMPLES                         << std::endl;
 
     coordinates_file << "# " << TAB << "ROOTNAME_OUTPUT:                       " << ROOTNAME_OUTPUT                                  << std::endl;
     coordinates_file << "# " << TAB << "SEED                                   " << SEED                                             << std::endl;
@@ -727,6 +728,7 @@ void embeddingSD_t::save_inferred_coordinates(int dim)
   coordinates_file << "# " << TAB << "NUMERICAL_ZERO                         " << NUMERICAL_ZERO                                   << std::endl;
   coordinates_file << "# " << TAB << "QUIET_MODE                             " << (QUIET_MODE                  ? "true" : "false") << std::endl;
   coordinates_file << "# " << TAB << "REFINE_MODE                            " << (REFINE_MODE                 ? "true" : "false") << std::endl;
+  coordinates_file << "# " << TAB << "REFINE_NEGATIVE_SAMPLES                " << REFINE_NEGATIVE_SAMPLES                         << std::endl;
 
   coordinates_file << "# " << TAB << "ROOTNAME_OUTPUT:                       " << ROOTNAME_OUTPUT                                  << std::endl;
   coordinates_file << "# " << TAB << "SEED                                   " << SEED                                             << std::endl;
@@ -1360,6 +1362,7 @@ void embeddingSD_t::finalize()
       std::clog << TAB << "NUMERICAL_ZERO                         " << NUMERICAL_ZERO << std::endl;
       std::clog << TAB << "QUIET_MODE                             " << (QUIET_MODE ? "true" : "false") << std::endl;
       std::clog << TAB << "REFINE_MODE                            " << (REFINE_MODE ? "true" : "false") << std::endl;
+      std::clog << TAB << "REFINE_NEGATIVE_SAMPLES                " << REFINE_NEGATIVE_SAMPLES << std::endl;
 
       std::clog << TAB << "ROOTNAME_OUTPUT:                       " << ROOTNAME_OUTPUT << std::endl;
       std::clog << TAB << "SEED                                   " << SEED << std::endl;
@@ -1412,6 +1415,7 @@ void embeddingSD_t::finalize()
                 << "\"backend\":\"" << (CUDA_MODE ? "cuda" : "cpu") << "\","
                 << "\"dimension\":" << DIMENSION << ","
                 << "\"seed\":" << SEED << ","
+                << "\"refine_negative_samples\":" << REFINE_NEGATIVE_SAMPLES << ","
                 << "\"nb_vertices\":" << nb_vertices << ","
                 << "\"nb_edges\":" << nb_edges << ","
                 << "\"total_time_ms\":" << stage_timing_summary.total_time_ms << ","

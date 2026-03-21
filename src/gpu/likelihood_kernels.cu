@@ -152,6 +152,7 @@ __global__ void score_s1_edge_kernel(const double *theta,
                                      double beta,
                                      const double *candidate_theta,
                                      int nb_candidates,
+                                     bool include_nonedge_term,
                                      double *out_scores)
 {
   const int candidate_index = blockIdx.x;
@@ -171,6 +172,10 @@ __global__ void score_s1_edge_kernel(const double *theta,
     const int v2 = col_indices[edge];
     const double dtheta = angular_distance_s1(angle, theta[v2]);
     const double fraction = (prefactor * dtheta) / (kappa_v1 * kappa[v2]);
+    if(include_nonedge_term)
+    {
+      local += -log(1.0 + pow(fraction, -beta));
+    }
     local += -beta * log(fraction);
   }
 
@@ -178,6 +183,43 @@ __global__ void score_s1_edge_kernel(const double *theta,
   if(threadIdx.x == 0)
   {
     out_scores[candidate_index] += reduced;
+  }
+}
+
+template <int BLOCK_SIZE>
+__global__ void score_s1_sampled_negative_kernel(const double *theta,
+                                                 const double *kappa,
+                                                 int v1,
+                                                 double prefactor,
+                                                 double beta,
+                                                 const double *candidate_theta,
+                                                 int nb_candidates,
+                                                 const int *negative_vertices,
+                                                 int nb_negative_vertices,
+                                                 double negative_weight,
+                                                 double *out_scores)
+{
+  const int candidate_index = blockIdx.x;
+  if(candidate_index >= nb_candidates)
+  {
+    return;
+  }
+
+  const double angle = candidate_theta[candidate_index];
+  const double kappa_v1 = kappa[v1];
+  double local = 0.0;
+  for(int idx = threadIdx.x; idx < nb_negative_vertices; idx += BLOCK_SIZE)
+  {
+    const int v2 = negative_vertices[idx];
+    const double dtheta = angular_distance_s1(angle, theta[v2]);
+    const double fraction = (prefactor * dtheta) / (kappa_v1 * kappa[v2]);
+    local += -log(1.0 + pow(fraction, -beta));
+  }
+
+  const double reduced = block_reduce_sum<BLOCK_SIZE>(local);
+  if(threadIdx.x == 0)
+  {
+    out_scores[candidate_index] += negative_weight * reduced;
   }
 }
 
@@ -245,6 +287,7 @@ __global__ void score_sd_edge_kernel(const double *positions_soa,
                                      double numerical_zero,
                                      const double *candidate_positions_soa,
                                      int nb_candidates,
+                                     bool include_nonedge_term,
                                      double *out_scores)
 {
   const int candidate_index = blockIdx.x;
@@ -271,6 +314,10 @@ __global__ void score_sd_edge_kernel(const double *positions_soa,
                                                         numerical_zero);
     const double chi = radius * dtheta / pow(mu * kappa_v1 * kappa[v2], inv_dim);
     const double prob = 1.0 / (1.0 + pow(chi, beta));
+    if(include_nonedge_term)
+    {
+      local += log(1.0 - prob);
+    }
     local += log(prob);
   }
 
@@ -278,6 +325,55 @@ __global__ void score_sd_edge_kernel(const double *positions_soa,
   if(threadIdx.x == 0)
   {
     out_scores[candidate_index] += reduced;
+  }
+}
+
+template <int BLOCK_SIZE>
+__global__ void score_sd_sampled_negative_kernel(const double *positions_soa,
+                                                 int dim_plus_one,
+                                                 const double *kappa,
+                                                 int nb_vertices,
+                                                 int v1,
+                                                 double radius,
+                                                 double mu,
+                                                 double beta,
+                                                 double inv_dim,
+                                                 double numerical_zero,
+                                                 const double *candidate_positions_soa,
+                                                 int nb_candidates,
+                                                 const int *negative_vertices,
+                                                 int nb_negative_vertices,
+                                                 double negative_weight,
+                                                 double *out_scores)
+{
+  const int candidate_index = blockIdx.x;
+  if(candidate_index >= nb_candidates)
+  {
+    return;
+  }
+
+  const double kappa_v1 = kappa[v1];
+  double local = 0.0;
+  for(int idx = threadIdx.x; idx < nb_negative_vertices; idx += BLOCK_SIZE)
+  {
+    const int v2 = negative_vertices[idx];
+    const double dtheta = angular_distance_sd_candidate(candidate_positions_soa,
+                                                        nb_candidates,
+                                                        candidate_index,
+                                                        positions_soa,
+                                                        dim_plus_one,
+                                                        nb_vertices,
+                                                        v2,
+                                                        numerical_zero);
+    const double chi = radius * dtheta / pow(mu * kappa_v1 * kappa[v2], inv_dim);
+    const double prob = 1.0 / (1.0 + pow(chi, beta));
+    local += log(1.0 - prob);
+  }
+
+  const double reduced = block_reduce_sum<BLOCK_SIZE>(local);
+  if(threadIdx.x == 0)
+  {
+    out_scores[candidate_index] += negative_weight * reduced;
   }
 }
 
@@ -364,6 +460,10 @@ void launch_score_candidates_s1(const double *theta,
                                 double beta,
                                 const double *candidate_theta,
                                 int nb_candidates,
+                                const int *negative_vertices,
+                                int nb_negative_vertices,
+                                double negative_weight,
+                                bool exact_negative_sweep,
                                 double *out_scores,
                                 cudaStream_t stream)
 {
@@ -372,15 +472,32 @@ void launch_score_candidates_s1(const double *theta,
     return;
   }
   constexpr int block_size = 256;
-  score_s1_nonedge_kernel<block_size><<<nb_candidates, block_size, 0, stream>>>(theta,
-                                                                                  kappa,
-                                                                                  nb_vertices,
-                                                                                  candidate_theta,
-                                                                                  nb_candidates,
-                                                                                  v1,
-                                                                                  prefactor,
-                                                                                  beta,
-                                                                                  out_scores);
+  if(exact_negative_sweep)
+  {
+    score_s1_nonedge_kernel<block_size><<<nb_candidates, block_size, 0, stream>>>(theta,
+                                                                                    kappa,
+                                                                                    nb_vertices,
+                                                                                    candidate_theta,
+                                                                                    nb_candidates,
+                                                                                    v1,
+                                                                                    prefactor,
+                                                                                    beta,
+                                                                                    out_scores);
+    score_s1_edge_kernel<block_size><<<nb_candidates, block_size, 0, stream>>>(theta,
+                                                                                 kappa,
+                                                                                 row_offsets,
+                                                                                 col_indices,
+                                                                                 v1,
+                                                                                 prefactor,
+                                                                                 beta,
+                                                                                 candidate_theta,
+                                                                                 nb_candidates,
+                                                                                 false,
+                                                                                 out_scores);
+    return;
+  }
+
+  cudaMemsetAsync(out_scores, 0, static_cast<std::size_t>(nb_candidates) * sizeof(double), stream);
   score_s1_edge_kernel<block_size><<<nb_candidates, block_size, 0, stream>>>(theta,
                                                                                kappa,
                                                                                row_offsets,
@@ -390,7 +507,22 @@ void launch_score_candidates_s1(const double *theta,
                                                                                beta,
                                                                                candidate_theta,
                                                                                nb_candidates,
+                                                                               true,
                                                                                out_scores);
+  if(nb_negative_vertices > 0)
+  {
+    score_s1_sampled_negative_kernel<block_size><<<nb_candidates, block_size, 0, stream>>>(theta,
+                                                                                              kappa,
+                                                                                              v1,
+                                                                                              prefactor,
+                                                                                              beta,
+                                                                                              candidate_theta,
+                                                                                              nb_candidates,
+                                                                                              negative_vertices,
+                                                                                              nb_negative_vertices,
+                                                                                              negative_weight,
+                                                                                              out_scores);
+  }
 }
 
 void launch_score_candidates_sd(const double *positions_soa,
@@ -406,6 +538,10 @@ void launch_score_candidates_sd(const double *positions_soa,
                                 double numerical_zero,
                                 const double *candidate_positions_soa,
                                 int nb_candidates,
+                                const int *negative_vertices,
+                                int nb_negative_vertices,
+                                double negative_weight,
+                                bool exact_negative_sweep,
                                 double *out_scores,
                                 cudaStream_t stream)
 {
@@ -415,19 +551,41 @@ void launch_score_candidates_sd(const double *positions_soa,
   }
   constexpr int block_size = 256;
   const double inv_dim = 1.0 / static_cast<double>(dim_plus_one - 1);
-  score_sd_nonedge_kernel<block_size><<<nb_candidates, block_size, 0, stream>>>(positions_soa,
-                                                                                  dim_plus_one,
-                                                                                  kappa,
-                                                                                  nb_vertices,
-                                                                                  v1,
-                                                                                  radius,
-                                                                                  mu,
-                                                                                  beta,
-                                                                                  inv_dim,
-                                                                                  numerical_zero,
-                                                                                  candidate_positions_soa,
-                                                                                  nb_candidates,
-                                                                                  out_scores);
+  if(exact_negative_sweep)
+  {
+    score_sd_nonedge_kernel<block_size><<<nb_candidates, block_size, 0, stream>>>(positions_soa,
+                                                                                    dim_plus_one,
+                                                                                    kappa,
+                                                                                    nb_vertices,
+                                                                                    v1,
+                                                                                    radius,
+                                                                                    mu,
+                                                                                    beta,
+                                                                                    inv_dim,
+                                                                                    numerical_zero,
+                                                                                    candidate_positions_soa,
+                                                                                    nb_candidates,
+                                                                                    out_scores);
+    score_sd_edge_kernel<block_size><<<nb_candidates, block_size, 0, stream>>>(positions_soa,
+                                                                                 dim_plus_one,
+                                                                                 kappa,
+                                                                                 row_offsets,
+                                                                                 col_indices,
+                                                                                 nb_vertices,
+                                                                                 v1,
+                                                                                 radius,
+                                                                                 mu,
+                                                                                 beta,
+                                                                                 inv_dim,
+                                                                                 numerical_zero,
+                                                                                 candidate_positions_soa,
+                                                                                 nb_candidates,
+                                                                                 false,
+                                                                                 out_scores);
+    return;
+  }
+
+  cudaMemsetAsync(out_scores, 0, static_cast<std::size_t>(nb_candidates) * sizeof(double), stream);
   score_sd_edge_kernel<block_size><<<nb_candidates, block_size, 0, stream>>>(positions_soa,
                                                                                dim_plus_one,
                                                                                kappa,
@@ -442,7 +600,27 @@ void launch_score_candidates_sd(const double *positions_soa,
                                                                                numerical_zero,
                                                                                candidate_positions_soa,
                                                                                nb_candidates,
+                                                                               true,
                                                                                out_scores);
+  if(nb_negative_vertices > 0)
+  {
+    score_sd_sampled_negative_kernel<block_size><<<nb_candidates, block_size, 0, stream>>>(positions_soa,
+                                                                                              dim_plus_one,
+                                                                                              kappa,
+                                                                                              nb_vertices,
+                                                                                              v1,
+                                                                                              radius,
+                                                                                              mu,
+                                                                                              beta,
+                                                                                              inv_dim,
+                                                                                              numerical_zero,
+                                                                                              candidate_positions_soa,
+                                                                                              nb_candidates,
+                                                                                              negative_vertices,
+                                                                                              nb_negative_vertices,
+                                                                                              negative_weight,
+                                                                                              out_scores);
+  }
 }
 
 void launch_expected_degrees_s1(const double *theta,

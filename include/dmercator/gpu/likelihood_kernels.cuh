@@ -15,6 +15,10 @@ void launch_score_candidates_s1(const double *theta,
                                 double beta,
                                 const double *candidate_theta,
                                 int nb_candidates,
+                                const int *negative_vertices,
+                                int nb_negative_vertices,
+                                double negative_weight,
+                                bool exact_negative_sweep,
                                 double *out_scores,
                                 cudaStream_t stream);
 
@@ -31,6 +35,10 @@ void launch_score_candidates_sd(const double *positions_soa,
                                 double numerical_zero,
                                 const double *candidate_positions_soa,
                                 int nb_candidates,
+                                const int *negative_vertices,
+                                int nb_negative_vertices,
+                                double negative_weight,
+                                bool exact_negative_sweep,
                                 double *out_scores,
                                 cudaStream_t stream);
 

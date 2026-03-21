@@ -61,6 +61,9 @@ class NullLikelihoodBackend final : public LikelihoodBackend
                              double,
                              double,
                              const std::vector<double> &,
+                             const std::vector<int> &,
+                             double,
+                             bool,
                              std::vector<double> &) override
     {
       return fail("score_candidates_s1");
@@ -73,6 +76,9 @@ class NullLikelihoodBackend final : public LikelihoodBackend
                              double,
                              double,
                              const std::vector<double> &,
+                             const std::vector<int> &,
+                             double,
+                             bool,
                              std::vector<double> &) override
     {
       return fail("score_candidates_sd");
