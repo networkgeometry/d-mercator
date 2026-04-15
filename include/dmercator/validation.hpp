@@ -1422,6 +1422,10 @@ void embeddingSD_t::finalize()
                 << "\"initialization_ms\":" << stage_timing_summary.initialization_ms << ","
                 << "\"parameter_inference_ms\":" << stage_timing_summary.parameter_inference_ms << ","
                 << "\"initial_positions_ms\":" << stage_timing_summary.initial_positions_ms << ","
+                << "\"initial_positions_weight_build_ms\":" << stage_timing_summary.initial_positions_weight_build_ms << ","
+                << "\"initial_positions_eigs_ms\":" << stage_timing_summary.initial_positions_eigs_ms << ","
+                << "\"initial_positions_sort_ms\":" << stage_timing_summary.initial_positions_sort_ms << ","
+                << "\"initial_positions_gap_ms\":" << stage_timing_summary.initial_positions_gap_ms << ","
                 << "\"refining_positions_ms\":" << stage_timing_summary.refining_positions_ms << ","
                 << "\"adjusting_kappas_ms\":" << stage_timing_summary.adjusting_kappas_ms << ","
                 << "\"io_ms\":" << stage_timing_summary.io_ms

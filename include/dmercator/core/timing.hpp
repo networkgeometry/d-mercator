@@ -11,6 +11,10 @@ struct StageTimingSummary
   double initialization_ms = 0.0;
   double parameter_inference_ms = 0.0;
   double initial_positions_ms = 0.0;
+  double initial_positions_weight_build_ms = 0.0;
+  double initial_positions_eigs_ms = 0.0;
+  double initial_positions_sort_ms = 0.0;
+  double initial_positions_gap_ms = 0.0;
   double refining_positions_ms = 0.0;
   double adjusting_kappas_ms = 0.0;
   double io_ms = 0.0;

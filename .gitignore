@@ -42,5 +42,7 @@ build_cpu/
 build_cuda/
 build-cuda/
 test_gpu_*
+*.err
+*.out
 
 data/*

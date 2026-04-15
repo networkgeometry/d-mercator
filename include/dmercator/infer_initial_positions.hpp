@@ -210,93 +210,97 @@ void embeddingSD_t::find_initial_ordering(std::vector<int> &ordering, std::vecto
   L.reserve(Eigen::VectorXi::Constant(nb_vertices_degree_gt_one, 3));
 
   std::vector<int> newID(nb_vertices, -1);
-  int n=0;
-  for(int v=0; v<nb_vertices; ++v)
   {
-    if(degree[v] > 1)
+    dmercator::core::timing::ScopedTimer timer(stage_timing_summary.initial_positions_weight_build_ms);
+
+    int n=0;
+    for(int v=0; v<nb_vertices; ++v)
     {
-      newID[v] = n;
-      ++n;
-    }
-  }
-  if(n != nb_vertices_degree_gt_one)
-    std::cout << "There is something wrong here." << std::endl;
-
-  double k1, k2, expected_distance, val, t(0), norm(0);
-  for(int v1(0), v2, d1, d2, n1, n2; v1<nb_vertices; ++v1)
-  {
-    n1 = newID[v1];
-    if(n1 != -1)
-    {
-
-      d1 = degree[v1];
-      k1 = random_ensemble_kappa_per_degree_class[d1];
-
-      const auto &neighbors = adjacency_flat_list[v1];
-      for(const int v2_candidate : neighbors)
+      if(degree[v] > 1)
       {
-        v2 = v2_candidate;
-        n2 = newID[v2];
-        if(n2 != -1)
-        {
+        newID[v] = n;
+        ++n;
+      }
+    }
+    if(n != nb_vertices_degree_gt_one)
+      std::cout << "There is something wrong here." << std::endl;
 
-          if(v1 < v2)
+    double k1, k2, expected_distance, val, t(0), norm(0);
+    for(int v1(0), v2, d1, d2, n1, n2; v1<nb_vertices; ++v1)
+    {
+      n1 = newID[v1];
+      if(n1 != -1)
+      {
+
+        d1 = degree[v1];
+        k1 = random_ensemble_kappa_per_degree_class[d1];
+
+        const auto &neighbors = adjacency_flat_list[v1];
+        for(const int v2_candidate : neighbors)
+        {
+          v2 = v2_candidate;
+          n2 = newID[v2];
+          if(n2 != -1)
           {
 
-            d2 = degree[v2];
-            k2 = random_ensemble_kappa_per_degree_class[d2];
-
-            expected_distance = PI * hyp2f1b(beta, -std::pow(nb_vertices / (2.0 * mu * k1 * k2), beta));
-            expected_distance /= 2 * hyp2f1a(beta, -std::pow(nb_vertices / (2.0 * mu * k1 * k2), beta));
-            if(expected_distance < 0 || expected_distance > PI)
+            if(v1 < v2)
             {
 
-              std::cerr << "Warning. Expected angular distance out of range." << std::endl;
-              std::terminate();
+              d2 = degree[v2];
+              k2 = random_ensemble_kappa_per_degree_class[d2];
+
+              expected_distance = PI * hyp2f1b(beta, -std::pow(nb_vertices / (2.0 * mu * k1 * k2), beta));
+              expected_distance /= 2 * hyp2f1a(beta, -std::pow(nb_vertices / (2.0 * mu * k1 * k2), beta));
+              if(expected_distance < 0 || expected_distance > PI)
+              {
+
+                std::cerr << "Warning. Expected angular distance out of range." << std::endl;
+                std::terminate();
+              }
+
+              expected_distance = 2 * std::sin(expected_distance / 2);
+
+              L.insert(n1, n2) = expected_distance;
+              L.insert(n2, n1) = expected_distance;
+
+              t += 2 * expected_distance * expected_distance;
+              norm += 2;
             }
-
-            expected_distance = 2 * std::sin(expected_distance / 2);
-
-            L.insert(n1, n2) = expected_distance;
-            L.insert(n2, n1) = expected_distance;
-
-            t += 2 * expected_distance * expected_distance;
-            norm += 2;
           }
         }
       }
     }
-  }
-  t /= norm;
+    t /= norm;
 
-  double value;
-  std::vector<double> strength(nb_vertices_degree_gt_one, 0);
-  for(int k(0), kk(L.outerSize()), v1, v2; k<kk; ++k)
-  {
-    for(Eigen::SparseMatrix<double>::InnerIterator it(L, k); it; ++it)
+    double value;
+    std::vector<double> strength(nb_vertices_degree_gt_one, 0);
+    for(int k(0), kk(L.outerSize()), v1, v2; k<kk; ++k)
     {
-      v1 = it.row();
-      v2 = it.col();
-      value = it.value();
-      value = std::exp(-1 * value * value / t);
-      L.coeffRef(v1, v2) = value;
-      strength[v1] += value;
+      for(Eigen::SparseMatrix<double>::InnerIterator it(L, k); it; ++it)
+      {
+        v1 = it.row();
+        v2 = it.col();
+        value = it.value();
+        value = std::exp(-1 * value * value / t);
+        L.coeffRef(v1, v2) = value;
+        strength[v1] += value;
+      }
     }
-  }
 
-  for(int k(0), kk(L.outerSize()), v1, v2; k<kk; ++k)
-  {
-    for(Eigen::SparseMatrix<double>::InnerIterator it(L, k); it; ++it)
+    for(int k(0), kk(L.outerSize()), v1, v2; k<kk; ++k)
     {
-      v1 = it.row();
-      v2 = it.col();
-      value = it.value();
-      L.coeffRef(v1, v2) = -1 * value / strength[v1];
+      for(Eigen::SparseMatrix<double>::InnerIterator it(L, k); it; ++it)
+      {
+        v1 = it.row();
+        v2 = it.col();
+        value = it.value();
+        L.coeffRef(v1, v2) = -1 * value / strength[v1];
+      }
     }
-  }
 
-  for(int v1(0); v1<nb_vertices_degree_gt_one; ++v1)
-    L.insert(v1, v1) = 1;
+    for(int v1(0); v1<nb_vertices_degree_gt_one; ++v1)
+      L.insert(v1, v1) = 1;
+  }
 
   if(!QUIET_MODE) { std::clog << " Matrix built." << std::endl; }
 
@@ -307,86 +311,93 @@ void embeddingSD_t::find_initial_ordering(std::vector<int> &ordering, std::vecto
   int ncv = 7;
 
   if(!QUIET_MODE) { std::clog << std::endl; }
-  bool keep_going = true;
-  while(keep_going)
   {
-
-    Spectra::GenEigsSolver< double, Spectra::SMALLEST_MAGN, Spectra::SparseGenMatProd<double> > eigs(&op, 3, ncv);
-
-    if(!QUIET_MODE) { std::clog << TAB << "Computing eigenvectors using Spectra parameter ncv = " << ncv << "..."; }
-    eigs.init();
-    int nconv = eigs.compute();
-
-    evectors = eigs.eigenvectors();
-
-    if(eigs.info() != Spectra::SUCCESSFUL)
+    dmercator::core::timing::ScopedTimer timer(stage_timing_summary.initial_positions_eigs_ms);
+    bool keep_going = true;
+    while(keep_going)
     {
 
-      if(ncv == nb_vertices)
-      {
-        std::cerr << std::endl << "The algorithm computing the eigenvectors (Spectra library) cannot converge at all... Exiting." << std::endl << std::endl;
-        std::terminate();
-      }
-      if(!QUIET_MODE) { std::clog << " Convergence not reached." << std::endl; }
+      Spectra::GenEigsSolver< double, Spectra::SMALLEST_MAGN, Spectra::SparseGenMatProd<double> > eigs(&op, 3, ncv);
 
-      ncv = std::pow(ncv, 1.5);
-      if(ncv > nb_vertices)
+      if(!QUIET_MODE) { std::clog << TAB << "Computing eigenvectors using Spectra parameter ncv = " << ncv << "..."; }
+      eigs.init();
+      int nconv = eigs.compute();
+      (void)nconv;
+
+      evectors = eigs.eigenvectors();
+
+      if(eigs.info() != Spectra::SUCCESSFUL)
       {
-        ncv = nb_vertices;
+
+        if(ncv == nb_vertices)
+        {
+          std::cerr << std::endl << "The algorithm computing the eigenvectors (Spectra library) cannot converge at all... Exiting." << std::endl << std::endl;
+          std::terminate();
+        }
+        if(!QUIET_MODE) { std::clog << " Convergence not reached." << std::endl; }
+
+        ncv = std::pow(ncv, 1.5);
+        if(ncv > nb_vertices)
+        {
+          ncv = nb_vertices;
+        }
       }
+      else
+        keep_going = false;
     }
-    else
-      keep_going = false;
   }
   if(!QUIET_MODE) { std::clog << " Convergence reached." << std::endl; }
 
-  raw_theta.clear();
-  raw_theta.resize(nb_vertices);
-
-  double angle;
-  std::set< std::pair<double, int> > ordering_set;
-  ordering_set.clear();
-  for(int v1(0), n1; v1<nb_vertices; ++v1)
   {
-    n1 = newID[v1];
-    if(n1 != -1)
+    dmercator::core::timing::ScopedTimer timer(stage_timing_summary.initial_positions_sort_ms);
+    raw_theta.clear();
+    raw_theta.resize(nb_vertices);
+
+    double angle;
+    std::set< std::pair<double, int> > ordering_set;
+    ordering_set.clear();
+    for(int v1(0), n1; v1<nb_vertices; ++v1)
     {
+      n1 = newID[v1];
+      if(n1 != -1)
+      {
 
-      angle = std::atan2(evectors(n1, 0).real(), evectors(n1, 1).real()) + PI;
-      ordering_set.insert(std::make_pair(angle, v1));
-      raw_theta[v1] = angle;
-    }
-  }
-
-  ordering.clear();
-  ordering.reserve(nb_vertices);
-  std::vector<int> list_neigh_degree_one;
-  auto it2 = ordering_set.begin();
-  auto end2 = ordering_set.end();
-  for(int v1; it2!=end2; ++it2)
-  {
-
-    v1 = it2->second;
-
-    list_neigh_degree_one.clear();
-    list_neigh_degree_one.reserve(degree[v1]);
-    const auto &neighbors = adjacency_flat_list[v1];
-    for(int v2 : neighbors)
-    {
-      if(degree[v2] == 1)
-        list_neigh_degree_one.push_back(v2);
+        angle = std::atan2(evectors(n1, 0).real(), evectors(n1, 1).real()) + PI;
+        ordering_set.insert(std::make_pair(angle, v1));
+        raw_theta[v1] = angle;
+      }
     }
 
-    for(int v(0), vv(list_neigh_degree_one.size() / 2); v<vv; ++v)
+    ordering.clear();
+    ordering.reserve(nb_vertices);
+    std::vector<int> list_neigh_degree_one;
+    auto it2 = ordering_set.begin();
+    auto end2 = ordering_set.end();
+    for(int v1; it2!=end2; ++it2)
     {
-      ordering.push_back(list_neigh_degree_one[v]);
-      raw_theta[list_neigh_degree_one[v]] = raw_theta[v1];
-    }
-    ordering.push_back(v1);
-    for(int v(list_neigh_degree_one.size() / 2), vv(list_neigh_degree_one.size()); v<vv; ++v)
-    {
-      ordering.push_back(list_neigh_degree_one[v]);
-      raw_theta[list_neigh_degree_one[v]] = raw_theta[v1];
+
+      v1 = it2->second;
+
+      list_neigh_degree_one.clear();
+      list_neigh_degree_one.reserve(degree[v1]);
+      const auto &neighbors = adjacency_flat_list[v1];
+      for(int v2 : neighbors)
+      {
+        if(degree[v2] == 1)
+          list_neigh_degree_one.push_back(v2);
+      }
+
+      for(int v(0), vv(list_neigh_degree_one.size() / 2); v<vv; ++v)
+      {
+        ordering.push_back(list_neigh_degree_one[v]);
+        raw_theta[list_neigh_degree_one[v]] = raw_theta[v1];
+      }
+      ordering.push_back(v1);
+      for(int v(list_neigh_degree_one.size() / 2), vv(list_neigh_degree_one.size()); v<vv; ++v)
+      {
+        ordering.push_back(list_neigh_degree_one[v]);
+        raw_theta[list_neigh_degree_one[v]] = raw_theta[v1];
+      }
     }
   }
 }
@@ -394,6 +405,10 @@ void embeddingSD_t::find_initial_ordering(std::vector<int> &ordering, std::vecto
 
 void embeddingSD_t::infer_initial_positions(int dim)
 {
+  stage_timing_summary.initial_positions_weight_build_ms = 0.0;
+  stage_timing_summary.initial_positions_eigs_ms = 0.0;
+  stage_timing_summary.initial_positions_sort_ms = 0.0;
+  stage_timing_summary.initial_positions_gap_ms = 0.0;
   if(!QUIET_MODE) {
     std::clog << "Finding initial positions/ordering...";
     std::clog.flush();
@@ -421,53 +436,68 @@ void embeddingSD_t::infer_initial_positions(int dim)
     auto it = ordering.begin();
     auto end = ordering.end();
 
-    v0 = *ordering.rbegin();
-    for(; it!=end; ++it, ++n)
     {
-
-      v1 = *it;
-
-      int1 = 0;
-      int2 = 0;
-      tmp = 0;
-      factor = prefactor / ( random_ensemble_kappa_per_degree_class[degree[v0]] * random_ensemble_kappa_per_degree_class[degree[v1]] );
-
-      b = beta;
-      if(adjacency_list[v0].find(v1) == adjacency_list[v0].end())
+      dmercator::core::timing::ScopedTimer timer(stage_timing_summary.initial_positions_gap_ms);
+      std::map<std::tuple<int, int, int>, double> gap_cache;
+      v0 = *ordering.rbegin();
+      for(; it!=end; ++it, ++n)
       {
-        b = -beta;
+
+        v1 = *it;
+
+        const int degree_v0 = degree[v0];
+        const int degree_v1 = degree[v1];
+        const int degree_min = std::min(degree_v0, degree_v1);
+        const int degree_max = std::max(degree_v0, degree_v1);
+        const bool connected = adjacency_list[v0].find(v1) != adjacency_list[v0].end();
+        const auto cache_key = std::make_tuple(degree_min, degree_max, connected ? 1 : 0);
+        const auto cache_it = gap_cache.find(cache_key);
+        if(cache_it != gap_cache.end())
+        {
+          possible_dtheta1 = cache_it->second;
+        }
+        else
+        {
+          int1 = 0;
+          int2 = 0;
+          tmp = 0;
+          factor = prefactor / ( random_ensemble_kappa_per_degree_class[degree_v0] * random_ensemble_kappa_per_degree_class[degree_v1] );
+
+          b = connected ? beta : -beta;
+          if(b > 0)
+          {
+            int2 += 0.5;
+          }
+
+          tmp = std::exp(-PI / avg_gap) / ( 1 + std::pow(factor * PI, b) );
+          int1 += PI * tmp / 2;
+          int2 += tmp / 2;
+
+          for(double da = dx; da < PI; da += dx)
+          {
+            tmp = std::exp(-da / avg_gap) / ( 1 + std::pow(factor * da, b) );
+            int1 += da * tmp;
+            int2 += tmp;
+          }
+
+          possible_dtheta1 = int1 / int2;
+          gap_cache.emplace(cache_key, possible_dtheta1);
+        }
+
+        possible_dtheta2 = PI - std::fabs(PI - std::fabs(raw_theta[v1] - raw_theta[v0]));
+        if(possible_dtheta1 > possible_dtheta2)
+        {
+          norm += possible_dtheta1;
+        }
+        else
+        {
+          norm += possible_dtheta2;
+        }
+
+        theta[v1] = norm;
+
+        v0 = v1;
       }
-
-      if(b > 0)
-      {
-        int2 += 0.5;
-      }
-
-      tmp = std::exp(-PI / avg_gap) / ( 1 + std::pow(factor * PI, b) );
-      int1 += PI * tmp / 2;
-      int2 += tmp / 2;
-
-      for(double da = dx; da < PI; da += dx)
-      {
-        tmp = std::exp(-da / avg_gap) / ( 1 + std::pow(factor * da, b) );
-        int1 += da * tmp;
-        int2 += tmp;
-      }
-
-      possible_dtheta1 = int1 / int2;
-      possible_dtheta2 = PI - std::fabs(PI - std::fabs(raw_theta[v1] - raw_theta[v0]));
-      if(possible_dtheta1 > possible_dtheta2)
-      {
-        norm += possible_dtheta1;
-      }
-      else
-      {
-        norm += possible_dtheta2;
-      }
-
-      theta[v1] = norm;
-
-      v0 = v1;
     }
     if(!QUIET_MODE) { std::clog << std::endl << TAB << "Sum of the angular positions (before adjustment): " << norm << std::endl; }
 
@@ -479,7 +509,9 @@ void embeddingSD_t::infer_initial_positions(int dim)
 
     theta[v1] = 0;
     if(!QUIET_MODE)
+    {
       std::clog << "                                     .................................................done.\n\n";
+    }
     return;
   }
 
