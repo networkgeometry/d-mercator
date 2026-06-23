@@ -978,10 +978,13 @@ double embeddingSD_t::compute_pairwise_loglikelihood(int dim, int v1, std::vecto
   const auto dtheta = compute_angle_d_vectors(pos1, pos2);
   const auto chi = radius * dtheta / std::pow(mu * kappa[v1] * kappa[v2], 1.0 / dim);
   const auto prob = 1 / (1 + std::pow(chi, beta));
-  if (neighbors) { // TODO: Is it correct ??
-    return std::log(prob);
+  if (neighbors) {
+    // Compute log(pij) - log(1-pij). This allows the caller to initially add all loglikelihoods
+    // for non-neighbours without checking the adjacency list. Then neighbours remove the double-
+    // counted loglikelihood.
+    return -beta * std::log(chi);
   } else {
-    return std::log(1 - prob);
+    return -std::log(1 + std::pow(chi, -beta));
   }  
 }
 
@@ -998,17 +1001,18 @@ double embeddingSD_t::compute_pairwise_loglikelihood(int v1, double t1, int v2, 
   // Computes the angular separation.
   double da = PI - std::fabs(PI - std::fabs(t1 - t2));
   // Computes the loglikelihood between vertives v1 and v2 according to whether they are neighbors or not.
-  double fraction = (nb_vertices * da) / (2 * PI * mu * kappa[v1] * kappa[v2]);
+  double chi = (nb_vertices * da) / (2 * PI * mu * kappa[v1] * kappa[v2]);
 
   if(neighbors)
   {
-    return -beta * std::log(fraction); // TODO: Correct if fraction >> 1, test it
-    // My solution:
-    // return -std::log(1 + std::pow(fraction, beta));
+    // Compute log(pij) - log(1-pij). This allows the caller to initially add all loglikelihoods
+    // for non-neighbours without checking the adjacency list. Then neighbours remove the double-
+    // counted loglikelihood.
+    return -beta * std::log(chi);
   }
   else // not neighbors
   {
-    return -std::log(1 + std::pow(fraction, -beta));
+    return -std::log(1 + std::pow(chi, -beta));
   }
 }
 
